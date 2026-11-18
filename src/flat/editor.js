@@ -17,6 +17,8 @@ import * as L from '../library.js';
 import * as TPL from '../templates.js';
 import * as SEC from '../section.js';
 import { fitWarp } from '../transfer.js';
+import * as OL from './outline.js';
+import { findLandmark } from '../landmarks.js';
 
 const UI_KEY = 'head3d.flat';
 const SEL = '#CD7158';
@@ -859,6 +861,34 @@ export function createFlat(app) {
     commit(); app.changed(); toast(TPL.TEMPLATE_LABELS[key] + 'を描きました（' + n + ' 本。直すときは「選択」）', 2600);
   }
 
+  // アウトラインのガイド：前の終点（あごから）と後ろの始点（襟足の生え際から）を cm で選んで、左右の側面と背面に描く
+  const olPick = { ...OL.DEFAULT_OUTLINE };
+  let olAnchors = null, olHead = null;
+  function outlineAnchors() {
+    if (olHead !== head) { olAnchors = OL.profileAnchors(head.meshes, findLandmark(head.landmarks, 'N.P').point.y); olHead = head; }
+    return olAnchors;
+  }
+  function syncOutline() {
+    $('#fl-ol-front-v').textContent = OL.frontLabel(olPick.front);
+    $('#fl-ol-back-v').textContent = OL.backLabel(olPick.back);
+    let kind = '';
+    try { kind = OL.outlineGeometry(outlineAnchors(), olPick).kind; } catch { /* 測れないヘッド：描くときに知らせる */ }
+    $('#fl-ol-draw-t').textContent = kind ? 'アウトラインを描く（' + kind + '）' : 'アウトラインを描く';
+  }
+  function stepOutline(key, d) {
+    olPick[key] = OL.clampCm(olPick[key] + d, key === 'front' ? OL.FRONT_RANGE : OL.BACK_RANGE);
+    syncOutline();
+  }
+  function addOutline() {
+    let geo;
+    try { geo = OL.outlineGeometry(outlineAnchors(), olPick); } catch (e) { toast('アウトラインが描けません：' + e.message); return; }
+    pushHistory();
+    const specs = OL.outlineSpecs(geo, [S.newId(), S.newId(), S.newId()]);
+    for (const sp of specs) shapes.push(S.newShape(sp));
+    commit(); app.changed();
+    toast('アウトライン（' + geo.label + '）を左右の側面と背面に描きました', 2600);
+  }
+
   // ---------------------------------------------------------------- 文字、標字
   let textTarget = null; // { id }（改字）或 { at }（新的）
   function askText(id, at) {
@@ -932,6 +962,7 @@ export function createFlat(app) {
     $('#fl-vnote').value = (drawing.viewNotes || {})[view] || '';
     $('#fl-back-clear').hidden = !backs[view];
     $('#fl-vp-title').textContent = viewById(view).label;
+    syncOutline();
   }
 
   // ---------------------------------------------------------------- 預覽：動畫
@@ -1289,6 +1320,11 @@ export function createFlat(app) {
   $('#fl-struct').addEventListener('click', () => setSetting('structure', !settings().structure));
   // 這個視圖的 ⋯
   document.querySelectorAll('#fl-view-pop [data-tpl]').forEach(b => b.addEventListener('click', () => { closePops(); addTemplate(b.dataset.tpl, $('#fl-tpl-all').getAttribute('aria-pressed') === 'true'); }));
+  $('#fl-ol-front-dec').addEventListener('click', () => stepOutline('front', -1));
+  $('#fl-ol-front-inc').addEventListener('click', () => stepOutline('front', 1));
+  $('#fl-ol-back-dec').addEventListener('click', () => stepOutline('back', -1));
+  $('#fl-ol-back-inc').addEventListener('click', () => stepOutline('back', 1));
+  $('#fl-ol-draw').addEventListener('click', () => { closePops(); addOutline(); });
   $('#fl-tpl-all').addEventListener('click', e => { const b = e.currentTarget; b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); });
   $('#fl-ms-a').addEventListener('click', () => { closePops(); mirrorSide(view === 'left' || view === 'right' ? 'to-other' : 'l2r'); });
   $('#fl-ms-b').addEventListener('click', () => { closePops(); mirrorSide(view === 'left' || view === 'right' ? 'from-other' : 'r2l'); });

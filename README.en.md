@@ -1,6 +1,6 @@
 # headmap (頭圖 3D)
 
-[繁體中文](README.md) | **English**
+[日本語](README.md) | [繁體中文](README.zh-Hant.md) | **English**
 
 A web app for drawing haircut diagrams. It offers two kinds of drawings: **3D** (draw directly on a head model and turn it to any angle) and **2D five views** (flat charts of the left, right, top, front and back, with line art generated from the head model).
 Build a diagram step by step, then preview it as an animation and save it as images, a PDF, a video or an exportable file. It runs in the browser on phones, tablets and computers, with nothing to install and no account.

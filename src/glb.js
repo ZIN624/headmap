@@ -8,7 +8,7 @@ const SIZE = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT4: 16 };
 
 function parseGlb(arrayBuffer) {
   const dv = new DataView(arrayBuffer);
-  if (dv.getUint32(0, true) !== 0x46546C67) throw new Error('不是 GLB 檔');
+  if (dv.getUint32(0, true) !== 0x46546C67) throw new Error('GLB ファイルではありません');
   const total = dv.getUint32(8, true);
   let offset = 12, json = null, bin = null;
   while (offset < total) {
@@ -18,7 +18,7 @@ function parseGlb(arrayBuffer) {
     else if (type === 0x004E4942) bin = chunk;
     offset += 8 + len;
   }
-  if (!json || !bin) throw new Error('GLB 缺 JSON 或 BIN 區塊');
+  if (!json || !bin) throw new Error('GLB に JSON または BIN のブロックがありません');
   return { json, bin };
 }
 
@@ -57,7 +57,7 @@ export function loadMeshes(arrayBuffer) {
     if (node.mesh !== undefined) {
       const mesh = json.meshes[node.mesh];
       const prim = mesh.primitives[0];
-      if ((prim.mode ?? 4) !== 4) throw new Error(`${node.name}：只支援三角形網格`);
+      if ((prim.mode ?? 4) !== 4) throw new Error(`${node.name}：三角形のメッシュにしか対応していません`);
       const positions = readAccessor(json, bin, prim.attributes.POSITION);
       const normals = prim.attributes.NORMAL !== undefined ? readAccessor(json, bin, prim.attributes.NORMAL) : null;
       let indices = prim.indices !== undefined ? readAccessor(json, bin, prim.indices) : null;

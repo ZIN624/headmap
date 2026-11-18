@@ -1,6 +1,6 @@
 # Deployment guide
 
-[繁體中文](DEPLOY.md) | **English**
+[日本語](DEPLOY.md) | [繁體中文](DEPLOY.zh-Hant.md) | **English**
 
 This guide shows how to host your own copy of headmap (頭圖 3D). No programming is needed; follow the steps for the platform you pick.
 

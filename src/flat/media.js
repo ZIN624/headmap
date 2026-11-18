@@ -9,7 +9,7 @@ function db() {
     const r = indexedDB.open(DB_NAME, 1);
     r.onupgradeneeded = () => r.result.createObjectStore(STORE);
     r.onsuccess = () => res(r.result);
-    r.onerror = () => rej(r.error || new Error('IndexedDB 打不開'));
+    r.onerror = () => rej(r.error || new Error('IndexedDB を開けません'));
   });
   return dbp;
 }
@@ -18,7 +18,7 @@ async function tx(mode, fn) {
   return new Promise((res, rej) => {
     const t = d.transaction(STORE, mode), st = t.objectStore(STORE), r = fn(st);
     t.oncomplete = () => res(r && 'result' in r ? r.result : undefined);
-    t.onerror = () => rej(t.error || new Error('IndexedDB 存取失敗'));
+    t.onerror = () => rej(t.error || new Error('IndexedDB の読み書きに失敗しました'));
   });
 }
 export const media = {
@@ -38,7 +38,7 @@ export const media = {
 // data:…;base64,… → Blob（自己解碼，不用 fetch：網站的安全設定不讓 fetch 讀 data: 網址）
 export function dataUrlToBlob(url) {
   const m = /^data:([^;,]+);base64,(.*)$/.exec(url);
-  if (!m) throw new Error('不是圖片資料');
+  if (!m) throw new Error('画像データではありません');
   const bin = atob(m[2]), bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   return new Blob([bytes], { type: m[1] });
@@ -50,7 +50,7 @@ export async function downscale(file, maxSide) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); ctx.drawImage(bmp, 0, 0, w, h);
   bmp.close && bmp.close();
-  return new Promise((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('圖片轉不出來'))), 'image/jpeg', 0.86));
+  return new Promise((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('画像を変換できません'))), 'image/jpeg', 0.86));
 }
 export async function loadImage(blob) {
   const url = URL.createObjectURL(blob);
@@ -68,7 +68,7 @@ export function buildPdf(pages, title = '') {
   obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
   obj(2, `<< /Type /Pages /Kids [${kids}] /Count ${n} >>`);
   const hex = s => '<FEFF' + [...s].map(ch => { const c = ch.codePointAt(0); return c > 0xffff ? '' : c.toString(16).padStart(4, '0').toUpperCase(); }).join('') + '>';
-  obj(3, `<< /Title ${hex(title)} /Producer ${hex('頭圖')} >>`);
+  obj(3, `<< /Title ${hex(title)} /Producer ${hex('カット図')} >>`);
   pages.forEach((p, i) => {
     const page = 4 + i * 3, img = page + 1, content = page + 2;
     obj(page, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${p.pw} ${p.ph}] /Resources << /XObject << /Im0 ${img} 0 R >> >> /Contents ${content} 0 R >>`);

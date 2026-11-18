@@ -15,14 +15,14 @@ export const headLabel = m => (m ? m.label + '（' + m.sub + '）' : '');
 
 // 清單檢查：回傳問題清單（空的＝沒問題）
 export function validateHeads(list) {
-  if (!list || list.format !== HEADS_FORMAT || !Array.isArray(list.models) || !list.models.length) return ['頭模清單格式不對'];
+  if (!list || list.format !== HEADS_FORMAT || !Array.isArray(list.models) || !list.models.length) return ['ヘッド一覧の形式が正しくありません'];
   const out = [], ids = new Set();
   for (const m of list.models) {
-    if (!m || typeof m.id !== 'string' || !/^[a-z0-9_]{1,24}$/.test(m.id) || ids.has(m.id)) { out.push('頭模的 id 重複或不對：' + (m && m.id)); continue; }
+    if (!m || typeof m.id !== 'string' || !/^[a-z0-9_]{1,24}$/.test(m.id) || ids.has(m.id)) { out.push('ヘッドの id が重複しているか正しくありません：' + (m && m.id)); continue; }
     ids.add(m.id);
-    for (const k of ['label', 'sub', 'glb', 'meta', 'author', 'license', 'source']) if (typeof m[k] !== 'string' || !m[k]) out.push(m.id + ' 缺 ' + k);
+    for (const k of ['label', 'sub', 'glb', 'meta', 'author', 'license', 'source']) if (typeof m[k] !== 'string' || !m[k]) out.push(m.id + ' に次がありません：' + k);
   }
-  if (!ids.has(list.default)) out.push('預設的頭模不在清單裡');
-  if (list.default2d !== undefined && !ids.has(list.default2d)) out.push('2D 用的頭模不在清單裡');
+  if (!ids.has(list.default)) out.push('標準のヘッドが一覧にありません');
+  if (list.default2d !== undefined && !ids.has(list.default2d)) out.push('2D 用のヘッドが一覧にありません');
   return out;
 }

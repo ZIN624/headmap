@@ -131,7 +131,7 @@ export function quadLength(S, C, E, n = 32) { let L = 0, prev = toV(S); for (let
 export function resample(points, count) {
   const pts = points.map(toV); const len = [0];
   for (let i = 1; i < pts.length; i++) len.push(len[i - 1] + pts[i].distanceTo(pts[i - 1]));
-  const total = len[len.length - 1]; if (total < 1e-9) throw new Error('線太短。');
+  const total = len[len.length - 1]; if (total < 1e-9) throw new Error('線が短すぎます。');
   const out = []; let seg = 0;
   for (let i = 0; i < count; i++) {
     const target = total * i / (count - 1);

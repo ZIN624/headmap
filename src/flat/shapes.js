@@ -17,13 +17,13 @@
 //   style.dash：solid 實線／dash 虛線／dot 點線；style.fill：ellipse 要不要填色（region 一定填）
 
 export const TYPES = ['line', 'curve', 'poly', 'free', 'region', 'ellipse', 'dot', 'text', 'icon', 'angle'];
-export const TYPE_LABELS = { line: '直線', curve: '曲線', poly: '折線', free: '手畫線', region: '面', ellipse: '圓', dot: '點', text: '文字', icon: '工具圖示', angle: '角度' };
+export const TYPE_LABELS = { line: '直線', curve: '曲線', poly: '折れ線', free: '手描き', region: '面', ellipse: '円', dot: '点', text: '文字', icon: '道具アイコン', angle: '角度' };
 export const PATH_TYPES = ['line', 'curve', 'poly', 'free'];   // 有兩端、可以加箭頭
 export const ENDS = ['none', 'arrow', 'dot', 'bar'];
 export const DASHES = ['solid', 'dash', 'dot'];
 export const MARKS = ['fill', 'ring', 'cross', 'x'];
 export const ICONS = ['scissors', 'thinning', 'razor', 'clipper', 'comb', 'brush', 'clip', 'hand', 'spray', 'dryer'];
-export const ICON_LABELS = { scissors: '剪刀', thinning: '打薄剪', razor: '剃刀', clipper: '電剪', comb: '梳子', brush: '圓梳', clip: '夾子', hand: '手指', spray: '噴水', dryer: '吹風機' };
+export const ICON_LABELS = { scissors: 'ハサミ', thinning: 'セニング', razor: 'レザー', clipper: 'バリカン', comb: 'コーム', brush: 'ロールブラシ', clip: 'ダッカール', hand: '指', spray: '霧吹き', dryer: 'ドライヤー' };
 export const WIDTHS = [0.5, 0.9, 1.4, 2.2, 3.2];             // 線寬（mm）五段
 export const COLORS = ['#1B1B1B', '#7A8089', '#236B91', '#1B64FF', '#0C8F91', '#2E8B57', '#D86735', '#C63B32', '#B0479A', '#E0A526'];
 export const TEMPLATE_INK = '#8A9099';                       // 頭模線稿的顏色
@@ -58,7 +58,7 @@ export function defaultStyle(type) {
 
 // 新的一筆：缺的欄位補預設值、超出範圍的拉回來
 export function newShape(o) {
-  if (!TYPES.includes(o.type)) throw new Error('種類不認得：' + o.type);
+  if (!TYPES.includes(o.type)) throw new Error('不明な種類：' + o.type);
   const s = { id: o.id || newId(), type: o.type, view: o.view, pts: (o.pts || []).map(p => [p[0], p[1]]) };
   const st = { ...defaultStyle(o.type), ...(o.style || {}) };
   s.style = {
@@ -94,15 +94,15 @@ export function saveShapes(list) {
   });
 }
 export function parseShapes(list, viewIds) {
-  if (!Array.isArray(list)) throw new Error('缺 shapes');
+  if (!Array.isArray(list)) throw new Error('shapes がありません');
   const seen = new Set();
   const out = list.map((o, i) => {
-    const where = '第 ' + (i + 1) + ' 筆';
-    if (!o || typeof o !== 'object') throw new Error(where + '不是物件');
-    if (!TYPES.includes(o.type)) throw new Error(where + '的種類不認得：' + o.type);
-    if (!viewIds.includes(o.view)) throw new Error(where + '的視圖不認得：' + o.view);
-    if (!Array.isArray(o.pts) || o.pts.length < minPts(o.type) || o.pts.length > maxPts(o.type)) throw new Error(where + '的點數不對');
-    if (!o.pts.every(ptOk)) throw new Error(where + '的點不是 [x, y] 數字');
+    const where = (i + 1) + ' 番目の図形';
+    if (!o || typeof o !== 'object') throw new Error(where + 'がオブジェクトではありません');
+    if (!TYPES.includes(o.type)) throw new Error(where + 'の種類が不明です：' + o.type);
+    if (!viewIds.includes(o.view)) throw new Error(where + 'のビューが不明です：' + o.view);
+    if (!Array.isArray(o.pts) || o.pts.length < minPts(o.type) || o.pts.length > maxPts(o.type)) throw new Error(where + 'の点の数が違います');
+    if (!o.pts.every(ptOk)) throw new Error(where + 'の点が [x, y] の数値ではありません');
     let id = typeof o.id === 'string' && o.id ? o.id : newId();
     if (seen.has(id)) id = newId();
     seen.add(id);

@@ -1,14 +1,14 @@
 {
-  "name": "頭圖 3D",
-  "short_name": "頭圖3D",
-  "description": "在 3D 頭模上畫點、線、面與髮片，自動存在這個瀏覽器裡。",
+  "name": "カット図 3D",
+  "short_name": "カット図3D",
+  "description": "3Dのヘッドに点・線・面・パネルを描けます。描いた図はこのブラウザに自動で保存されます。",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#FFFFFF",
   "theme_color": "#B5C4CA",
-  "lang": "zh-Hant",
+  "lang": "ja",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }

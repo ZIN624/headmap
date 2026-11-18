@@ -29,7 +29,7 @@ function nearestIndex(poly, p, from = 0, to = poly.length - 1) {
 }
 // poly[i0..i1] 上照弧長等分取 k 個點（不含兩端）
 function between(poly, i0, i1, k) {
-  if (!(i1 > i0)) throw new Error('骨架：兩個點位在線上的順序不對');
+  if (!(i1 > i0)) throw new Error('骨組み：線の上の2つのポイントの順番が違います');
   const cum = [0];
   for (let i = i0 + 1; i <= i1; i++) cum.push(cum[cum.length - 1] + dist(poly[i], poly[i - 1]));
   const total = cum[cum.length - 1], out = [];
@@ -47,7 +47,7 @@ function between(poly, i0, i1, k) {
 // symmetric＝這顆頭左右對稱：左右對照點取平均後鏡像、中線點 x＝0，兩顆對稱的頭之間的變形才會剛好左右對稱。
 // 回傳 { labels, pts }：每顆頭的 labels 一模一樣，pts 是 [x,y,z] 公尺。
 export function skeleton(lms, outline, lines, { symmetric = false } = {}) {
-  const lm = (id, side = '') => { const l = lms.find(x => x.id === id && x.side === side); if (!l) throw new Error('骨架：找不到點位 ' + id + side); return arr(l.point); };
+  const lm = (id, side = '') => { const l = lms.find(x => x.id === id && x.side === side); if (!l) throw new Error('骨組み：ポイントが見つかりません ' + id + side); return arr(l.point); };
   const labels = [], pts = [];
   const add = (label, p) => { labels.push(label); pts.push(p); };
   for (const l of lms) add('lm:' + l.id + (l.side ? ':' + l.side : ''), arr(l.point));
@@ -63,7 +63,7 @@ export function skeleton(lms, outline, lines, { symmetric = false } = {}) {
       prev = next;
     }
   }
-  const line = id => { const l = lines.find(x => x.id === id); if (!l) throw new Error('骨架：找不到結構線 ' + id); return l.points.map(arr); };
+  const line = id => { const l = lines.find(x => x.id === id); if (!l) throw new Error('骨組み：構造線が見つかりません ' + id); return l.points.map(arr); };
   { // 中線：九個點之間各取幾個
     const poly = line('center'); let prev = 0;
     for (let s = 0; s < MIDLINE.length - 1; s++) {
@@ -83,7 +83,7 @@ export function skeleton(lms, outline, lines, { symmetric = false } = {}) {
     const a = ee[side], b = gp[side];
     let ia = 1, ib = 1, bd = Infinity;
     for (let i = 1; i < a.length - 1; i++) for (let j = 1; j < b.length - 1; j++) { const d = dist(a[i], b[j]); if (d < bd) { bd = d; ia = i; ib = j; } }
-    if (bd > 0.004) throw new Error('骨架：耳到耳線和 G.P 橫線沒有交叉（最近 ' + (bd * 1000).toFixed(1) + ' mm）');
+    if (bd > 0.004) throw new Error('骨組み：イヤーツーイヤーと G.P の横線が交わりません（最も近い所で ' + (bd * 1000).toFixed(1) + ' mm）');
     add('x:' + side, [(a[ia][0] + b[ib][0]) / 2, (a[ia][1] + b[ib][1]) / 2, (a[ia][2] + b[ib][2]) / 2]);
     between(a, 0, ia, SKELETON_K.ear[0]).forEach((p, j) => add('ee:' + side + ':a' + (j + 1), p));
     between(a, ia, a.length - 1, SKELETON_K.ear[1]).forEach((p, j) => add('ee:' + side + ':b' + (j + 1), p));
@@ -96,7 +96,7 @@ export function skeleton(lms, outline, lines, { symmetric = false } = {}) {
     labels.forEach((l, i) => {
       const parts = l.split(':'), k = parts.indexOf('L');
       if (k >= 0) {
-        parts[k] = 'R'; const j = at.get(parts.join(':')); if (j === undefined) throw new Error('骨架：' + l + ' 沒有右側對應點');
+        parts[k] = 'R'; const j = at.get(parts.join(':')); if (j === undefined) throw new Error('骨組み：' + l + ' に右側の対応点がありません');
         const a = pts[i], b = pts[j], m = [(a[0] - b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
         pts[i] = m; pts[j] = [-m[0], m[1], m[2]];
       } else if (!parts.includes('R')) pts[i] = [0, pts[i][1], pts[i][2]];
@@ -110,7 +110,7 @@ function solve(A, B) { // 高斯消去（部分選主元）；A：n×n，B：n×
   const n = A.length, m = B[0].length;
   for (let c = 0; c < n; c++) {
     let p = c; for (let r = c + 1; r < n; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
-    if (Math.abs(A[p][c]) < 1e-13) throw new Error('換頭模：對照點重複，解不出變形');
+    if (Math.abs(A[p][c]) < 1e-13) throw new Error('ヘッド切り替え：対応点が重なっていて変形を計算できません');
     [A[c], A[p]] = [A[p], A[c]]; [B[c], B[p]] = [B[p], B[c]];
     for (let r = c + 1; r < n; r++) { const f = A[r][c] / A[c][c]; if (!f) continue; for (let k = c; k < n; k++) A[r][k] -= f * A[c][k]; for (let k = 0; k < m; k++) B[r][k] -= f * B[c][k]; }
   }
@@ -121,7 +121,7 @@ function solve(A, B) { // 高斯消去（部分選主元）；A：n×n，B：n×
 // src、dst：一樣多的點（[x,y,z] 或 [x,y]，維度 d 由點決定）。回傳 f(p) → 同維度的點，f(src[i])＝dst[i]。
 export function fitWarp(src, dst) {
   const n = src.length, d = src.length ? src[0].length : 3;
-  if (n !== dst.length || n < d + 1) throw new Error('換頭模：兩邊的對照點數目不一樣');
+  if (n !== dst.length || n < d + 1) throw new Error('ヘッド切り替え：両方の対応点の数が違います');
   const D = (a, b) => { let s = 0; for (let k = 0; k < d; k++) s += (a[k] - b[k]) ** 2; return Math.sqrt(s); };
   const N = n + 1 + d, A = Array.from({ length: N }, () => new Array(N).fill(0)), B = Array.from({ length: N }, () => new Array(d).fill(0));
   for (let i = 0; i < n; i++) {
@@ -140,10 +140,10 @@ export function fitWarp(src, dst) {
 
 export function validateTransfer(data) {
   const out = [];
-  if (!data || data.format !== TRANSFER_FORMAT || !Array.isArray(data.labels) || !data.heads) return ['換頭模的對照資料格式不對'];
+  if (!data || data.format !== TRANSFER_FORMAT || !Array.isArray(data.labels) || !data.heads) return ['ヘッド切り替えの対応データの形式が正しくありません'];
   for (const [id, h] of Object.entries(data.heads)) {
-    if (!h || !Array.isArray(h.pts) || h.pts.length !== data.labels.length) out.push(id + ' 的對照點數目和 labels 不一樣');
-    else if (!h.pts.every(p => Array.isArray(p) && p.length === 3 && p.every(Number.isFinite))) out.push(id + ' 的對照點不是數字');
+    if (!h || !Array.isArray(h.pts) || h.pts.length !== data.labels.length) out.push(id + ' の対応点の数が labels と違います');
+    else if (!h.pts.every(p => Array.isArray(p) && p.length === 3 && p.every(Number.isFinite))) out.push(id + ' の対応点が数値ではありません');
   }
   return out;
 }
@@ -157,7 +157,7 @@ export function makeContext(data) {
     warp(from, to) {
       const key = from + '>' + to;
       if (!cache.has(key)) {
-        if (!data.heads[from] || !data.heads[to]) throw new Error('換頭模的對照資料裡沒有這顆頭：' + (data.heads[from] ? to : from));
+        if (!data.heads[from] || !data.heads[to]) throw new Error('ヘッド切り替えの対応データにこのヘッドがありません：' + (data.heads[from] ? to : from));
         cache.set(key, fitWarp(data.heads[from].pts, data.heads[to].pts));
       }
       return cache.get(key);
@@ -207,7 +207,7 @@ export function convertLayers(layers, fromHead, toHead, ctx, project) {
 export function convertDrawing(drawing, toHead, ctx, project) {
   const from = drawing.head;
   if (from === toHead) return 0;
-  if (!ctx.has(from) || !ctx.has(toHead)) throw new Error('換頭模的對照資料裡沒有這顆頭：' + (ctx.has(from) ? toHead : from));
+  if (!ctx.has(from) || !ctx.has(toHead)) throw new Error('ヘッド切り替えの対応データにこのヘッドがありません：' + (ctx.has(from) ? toHead : from));
   let n = 0;
   for (const s of drawing.steps) n += convertLayers(s.layers, from, toHead, ctx, project);
   drawing.head = toHead;

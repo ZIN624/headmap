@@ -16,7 +16,7 @@ import { DEFAULT_LIFT, normalizeLift } from './lift.js';
 import { normalizeSection } from './section.js';
 
 export const SHAPES = ['line', 'curve', 'freehand', 'point', 'region', 'panel', 'strand', 'fan'];
-export const SHAPE_LABELS = { line: '直線', curve: '曲線', freehand: '手畫線', point: '點', region: '面', panel: '髮片', strand: '提拉線', fan: '角度扇形' };
+export const SHAPE_LABELS = { line: '直線', curve: '曲線', freehand: '手描き', point: '点', region: '面', panel: 'パネル', strand: 'リフトライン', fan: '角度の扇形' };
 export const LIFT_SHAPES = ['panel', 'strand', 'fan'];
 export const NO_ARROW_SHAPES = ['point', 'region', 'panel', 'fan'];
 const SEGMENT_SHAPES = ['curve', 'freehand', 'region', 'panel']; // 多段，每段可以有彎度點
@@ -64,7 +64,7 @@ export const segmentCount = layer => (layer.shape === 'region' ? layer.points.le
 
 // 新的一筆。o = { shape, points, style?, dashed?, arrow?, control?, bends?, section?, poly?, lift?, label?, mirrorPairId?, id? }
 export function newLayer(o) {
-  if (!SHAPES.includes(o.shape)) throw new Error('形狀不認得：' + o.shape);
+  if (!SHAPES.includes(o.shape)) throw new Error('不明な形：' + o.shape);
   const layer = { id: o.id || newId(), shape: o.shape, points: (o.points || []).map(toPoint), style: { ...defaultStyle(), ...(o.style || {}) },
     dashed: !!o.dashed, arrow: !!o.arrow && !NO_ARROW_SHAPES.includes(o.shape), closed: o.shape === 'region' };
   if (o.shape === 'line') {
@@ -105,14 +105,14 @@ export function normalizeStyle(layer) {
 
 // 把一筆就地變成髮片類：線 → 髮片（線本身變成根線；拉彎的直線把彎度點 bend 當第一段的彎度點）；點 → 提拉線或角度扇形。
 export function convertToLift(layer, shape, bend = null) {
-  if (!LIFT_SHAPES.includes(shape)) throw new Error('不是髮片類：' + shape);
+  if (!LIFT_SHAPES.includes(shape)) throw new Error('パネルの種類ではありません：' + shape);
   if (shape === 'panel') {
-    if (!['line', 'curve', 'freehand'].includes(layer.shape)) throw new Error('只有線能拉成髮片');
+    if (!['line', 'curve', 'freehand'].includes(layer.shape)) throw new Error('パネルにできるのは線だけです');
     const bends = layer.shape === 'line' ? [bend ? toPoint(bend) : null] : (layer.bends || []);
     layer.shape = 'panel'; delete layer.control; delete layer.section;
     layer.bends = normalizeBends(bends, layer.points.length - 1);
   } else {
-    if (layer.shape !== 'point') throw new Error('只有點能變成提拉線或角度扇形');
+    if (layer.shape !== 'point') throw new Error('リフトラインや角度の扇形にできるのは点だけです');
     layer.shape = shape; layer.points = [layer.points[0]]; delete layer.control; delete layer.bends;
   }
   layer.arrow = shape === 'strand'; layer.closed = false;
@@ -165,21 +165,21 @@ function originOk(o, count) {
 // ---- 讀檔：每一筆都檢查，不合格就丟出錯誤（訊息說明是第幾筆、哪裡不對）
 const pointOk = p => !!p && typeof p === 'object' && [p.x, p.y, p.z].every(Number.isFinite) && Math.hypot(p.x, p.y, p.z) <= 2;
 function checkPoints(points, where, min, max) {
-  if (!Array.isArray(points) || points.length < min) throw new Error(where + '的點少於 ' + min + ' 個');
-  if (points.length > max) throw new Error(where + '的點多於 ' + max + ' 個');
+  if (!Array.isArray(points) || points.length < min) throw new Error(where + 'の点が ' + min + ' 個未満です');
+  if (points.length > max) throw new Error(where + 'の点が ' + max + ' 個を超えています');
   return points.map((p, j) => {
-    if (!p || typeof p !== 'object' || ![p.x, p.y, p.z].every(Number.isFinite)) throw new Error(where + '第 ' + (j + 1) + ' 點不是 {x, y, z} 數字');
-    if (Math.hypot(p.x, p.y, p.z) > 2) throw new Error(where + '第 ' + (j + 1) + ' 點離頭太遠（單位要是公尺）');
+    if (!p || typeof p !== 'object' || ![p.x, p.y, p.z].every(Number.isFinite)) throw new Error(where + 'の ' + (j + 1) + ' 番目の点が {x, y, z} の数値ではありません');
+    if (Math.hypot(p.x, p.y, p.z) > 2) throw new Error(where + 'の ' + (j + 1) + ' 番目の点が頭から離れすぎています（単位はメートル）');
     return { x: p.x, y: p.y, z: p.z };
   });
 }
 export function parseLayers(list) {
-  if (!Array.isArray(list)) throw new Error('缺 layers');
+  if (!Array.isArray(list)) throw new Error('layers がありません');
   const seen = new Set(), base = defaultStyle();
   const layers = list.map((l, i) => {
-    const where = '第 ' + (i + 1) + ' 筆';
-    if (!l || typeof l !== 'object') throw new Error(where + '不是物件');
-    if (!SHAPES.includes(l.shape)) throw new Error(where + '的形狀不認得：' + l.shape);
+    const where = (i + 1) + ' 番目の線';
+    if (!l || typeof l !== 'object') throw new Error(where + 'がオブジェクトではありません');
+    if (!SHAPES.includes(l.shape)) throw new Error(where + 'の形が不明です：' + l.shape);
     const points = checkPoints(l.points, where, minPoints(l.shape), maxPoints(l.shape));
     const s = l.style && typeof l.style === 'object' ? l.style : {};
     let id = typeof l.id === 'string' && l.id ? l.id : newId();

@@ -1478,7 +1478,8 @@ function deletePoint() {
 
 // ---------------------------------------------------------------- 匯出、匯入
 function stamp() { const d = new Date(), p = n => String(n).padStart(2, '0'); return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()); }
-function downloadBlob(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.rel = 'noopener'; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
+// 檔案網址留 60 秒才收回：iPhone、iPad 的 Safari 會先問「要下載嗎」，使用者還沒按就收回的話，下載卡住、網址列的進度條一直停著
+function downloadBlob(blob, name) { const a = document.createElement('a'); const url = URL.createObjectURL(blob); a.href = url; a.download = name; a.rel = 'noopener'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); }
 async function shareBlob(blob, name, title) {
   const file = new File([blob], name, { type: blob.type });
   if (!navigator.share || !(navigator.canShare && navigator.canShare({ files: [file] }))) { toast('這個瀏覽器不支援分享檔案，改用下載'); downloadBlob(blob, name); return; }

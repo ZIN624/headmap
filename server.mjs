@@ -50,10 +50,10 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(port, host, () => {
   const actual = server.address().port;
-  console.log('頭圖 3D');
-  console.log('  這台電腦：http://127.0.0.1:' + actual + '/');
+  console.log('カット図 3D');
+  console.log('  このパソコン：http://127.0.0.1:' + actual + '/');
   if (!lan) return;
   for (const list of Object.values(os.networkInterfaces())) {
-    for (const n of list || []) if (n.family === 'IPv4' && !n.internal) console.log('  同一個網路的裝置：http://' + n.address + ':' + actual + '/');
+    for (const n of list || []) if (n.family === 'IPv4' && !n.internal) console.log('  同じネットワークの端末：http://' + n.address + ':' + actual + '/');
   }
 });

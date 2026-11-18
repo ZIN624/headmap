@@ -31,9 +31,9 @@ const CAMERA_DISTANCE = 1.2;
 const FRAME_HALF = 0.135, FRAME_MIN_HEIGHT = 0.32; // 手機先框頭部；展開設定或橫放仍容得下完整頭殼
 // 九個固定視角。方位角 0＝正面（臉朝 +Z）、90＝模型左側（+X）、180＝後面、270＝模型右側。
 const VIEWS = [
-  { key: 'front', label: '正', az: 0 }, { key: 'front_left_45', label: '左前', az: 45 }, { key: 'left', label: '左', az: 90 },
+  { key: 'front', label: '前', az: 0 }, { key: 'front_left_45', label: '左前', az: 45 }, { key: 'left', label: '左', az: 90 },
   { key: 'back_left_45', label: '左後', az: 135 }, { key: 'back', label: '後', az: 180 }, { key: 'back_right_45', label: '右後', az: 225 },
-  { key: 'right', label: '右', az: 270 }, { key: 'front_right_45', label: '右前', az: 315 }, { key: 'top', label: '頂' },
+  { key: 'right', label: '右', az: 270 }, { key: 'front_right_45', label: '右前', az: 315 }, { key: 'top', label: '上' },
 ];
 // 工具列：選取、點、線、面、髮片。「線」的形狀在選項列切換：手畫是另一個工具（freehand），其他形狀都是 line。
 // 「髮片」＝畫一條兩點的線，畫完直接拉成髮片。shape＝畫出來的形狀；family＝之後畫的樣式記在哪一家（線與手畫共用 line）
@@ -46,17 +46,17 @@ const LINE_SHAPES = ['two', 'h', 'v', 'f', 'b', 'r', 'free'];
 const SHAPE_KIND = { h: 'H', v: 'V', f: 'F', b: 'B', r: 'R' };
 // 每種分線一句白話（選項列下面那一行）：這是什麼線、怎麼畫
 const LINE_TIPS = {
-  h: '水平：按住拖，線只沿著和地面平行的方向走。',
-  v: '垂直：按住拖，上下直切；從現在這個角度看是直線。',
-  f: '前斜：線往臉的方向低下去；斜度畫好後在「平行」裡改。',
-  b: '後斜：線往後腦的方向低下去；斜度畫好後在「平行」裡改。',
-  r: '放射：點一下頭皮，就從樞軸拉一條線到那裡。',
+  h: '水平：押したままドラッグすると、床と平行な向きにだけ線が引けます。',
+  v: '垂直：押したままドラッグして上下にまっすぐ引きます。今の角度から見て直線になります。',
+  f: '前下がり：顔の方へ下がる線です。傾きは描いたあと「平行」で変えられます。',
+  b: '前上がり：後頭部の方へ下がる線です。傾きは描いたあと「平行」で変えられます。',
+  r: '放射：頭皮をタップすると、中心点からそこまで線を引きます。',
 };
 // 「面」工具怎麼做出一塊面：fill＝點在線圍起來的地方就填滿；draw＝自己圈（在頭上點幾下、按閉合）
 const REGION_MODES = ['fill', 'draw'];
 const REGION_TIPS = {
-  fill: '上排樣板：按一下畫好分線。點一下填滿：點線圍起來的那一塊，就填上顏色（邊界＝畫好的線和外輪廓）。',
-  draw: '上排樣板：按一下畫好分線。自己圈：在頭上點幾下，再按「閉合」，圈出一塊面。',
+  fill: '上のテンプレート：押すと分け線が引けます。タップで塗る：線で囲まれた所をタップすると色が付きます（境目＝描いた線と外周ライン）。',
+  draw: '上のテンプレート：押すと分け線が引けます。自分で囲む：頭の上を何か所かタップして「閉じる」を押すと、面ができます。',
 };
 // 這兩個工具畫完會自動選取那一筆，所以這兩個工具下也能拖選取中那筆的端點與彎度把手
 const AUTO_SELECT_TOOLS = ['line', 'panel'];
@@ -122,7 +122,7 @@ function markView(key) {
   viewKey = key;
   document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === key));
   const v = VIEWS.find(x => x.key === key);
-  $('#view-label').textContent = v ? v.label + (v.key === 'top' && doc.settings.topFaceDown ? '↓' : '') : '視角';
+  $('#view-label').textContent = v ? v.label + (v.key === 'top' && doc.settings.topFaceDown ? '↓' : '') : '視点';
 }
 const r4 = x => Math.round(x * 10000) / 10000;
 function cameraState() { return { p: camera.position.toArray().map(r4), u: camera.up.toArray().map(r4), z: r4(camera.zoom), k: viewKey }; }
@@ -154,7 +154,7 @@ const FALL_STRANDS = 9; // 放下時一片至少畫 9 根，看得出垂下來�
 const curStep = () => (drawing ? drawing.steps[stepIndex] || null : null);
 function saveLib() {
   lib.updatedAt = new Date().toISOString();
-  try { localStorage.setItem(L.STORAGE_KEY, L.serializeLibrary(lib)); } catch (e) { toast('自動儲存失敗：' + (e && e.message || e), 4000); }
+  try { localStorage.setItem(L.STORAGE_KEY, L.serializeLibrary(lib)); } catch (e) { toast('自動保存できませんでした：' + (e && e.message || e), 4000); }
 }
 // 每畫一筆：這一步的筆寫回頭圖庫
 function save() {
@@ -169,7 +169,7 @@ function loadLibrary() {
     try { lib = L.parseLibrary(text); }
     catch (e) {
       try { localStorage.setItem(L.STORAGE_KEY + '.unreadable-' + Date.now(), text); } catch { /* 存不下就不另存 */ }
-      toast('頭圖庫讀不回來（原檔另存了一份），先開一份新的：' + e.message, 5000);
+      toast('カット図ライブラリが読み込めません（元のデータは別に保存しました）。新しく始めます：' + e.message, 5000);
     }
   }
   if (!lib) lib = L.newLibrary();
@@ -431,13 +431,13 @@ function buildGhosts() {
   const g = new THREE.Group();
   for (const j of idx) {
     let layers; try { layers = L.stepLayers(drawing.steps[j]); } catch { continue; }
-    for (const l of layers) { try { const o = makeLayerObject(l, false, layers); fadeGroup(o.group, 0.38); o.group.renderOrder = 1.5; g.add(o.group); ghostLayers.push(l); ghostDense.push({ layer: l, dense: o.dense }); if (o.fallTips) ghostTips.push(...o.fallTips); } catch (e) { console.warn('淡色複本建不出來', e); } }
+    for (const l of layers) { try { const o = makeLayerObject(l, false, layers); fadeGroup(o.group, 0.38); o.group.renderOrder = 1.5; g.add(o.group); ghostLayers.push(l); ghostDense.push({ layer: l, dense: o.dense }); if (o.fallTips) ghostTips.push(...o.fallTips); } catch (e) { console.warn('薄い色のコピーが作れません', e); } }
   }
   scene.add(g); ghostGroup = g; syncFallBtn(); requestRender();
 }
 function disposeGroup(group) { group.traverse(o => { if (o.material && o.material.map) o.material.map.dispose(); if (o.geometry && !o.isSprite) o.geometry.dispose(); if (o.material) o.material.dispose(); }); scene.remove(group); }
 function removeObject(id) { const o = objects.get(id); if (!o) return; disposeGroup(o.group); objects.delete(id); }
-const rebuildOnly = l => { removeObject(l.id); try { buildLayer(l, l.id === selectedId); } catch (e) { console.warn('建不出來', l.id, e); } };
+const rebuildOnly = l => { removeObject(l.id); try { buildLayer(l, l.id === selectedId); } catch (e) { console.warn('作れません', l.id, e); } };
 // 一片髮片重建之後，排在它後面「跟前一片」的髮片也要重建
 function rebuildFollowers(layer) { const i = doc.layers.findIndex(l => l.id === layer.id); for (const f of doc.layers.slice(i + 1)) if (f.shape === 'panel' && f.lift.follow) rebuildOnly(f); }
 // 重建一筆後一定要重畫：把手是 HTML 會即時動，three 的線要等下一次 render
@@ -446,7 +446,7 @@ function rebuild() {
   const ids = new Set(doc.layers.map(l => l.id));
   for (const id of [...objects.keys()]) if (!ids.has(id)) removeObject(id);
   if (selectedId && !ids.has(selectedId)) { selectedId = null; activeHandle = null; }
-  for (const l of doc.layers) if (!objects.has(l.id)) { try { buildLayer(l, l.id === selectedId); } catch (e) { console.warn('建不出來', l.id, e); } }
+  for (const l of doc.layers) if (!objects.has(l.id)) { try { buildLayer(l, l.id === selectedId); } catch (e) { console.warn('作れません', l.id, e); } }
   requestRender();
 }
 // 輪廓線樣式：眼睛選單切換，記在介面設定裡（不進 JSON）。不認得的樣式一律當細實線。
@@ -546,7 +546,7 @@ function setDraftEnd(p) {
 // 畫好：建立這條線（分線多帶 section），畫完自動選取
 function finishLine(d, st) {
   const pts = d.points.slice(0, 2), made = createLayer('line', pts, st, d.sect ? { section: { ...d.sect } } : {});
-  if (made && d.sect && d.clipped && !clipHinted) { clipHinted = true; toast('線只畫到外輪廓為止', 2000); }
+  if (made && d.sect && d.clipped && !clipHinted) { clipHinted = true; toast('線は外周ラインまでしか引けません', 2000); }
   autoSelect(made);
 }
 // 改過一條分線的端點之後（拖把手、整條搬、改斜度）：anchor＝不動的那一端的索引。
@@ -564,7 +564,7 @@ let repCount = SEC.REPEAT.countDefault, repGap = SEC.REPEAT.gapDefault, repDir =
 function syncRepeatPop() {
   const l = layerById(selectedId), sec = sectionOf(l);
   if (!SEC.canRepeat(sec)) { closePops(); return; }
-  $('#rep-count-v').textContent = repCount + ' 條';
+  $('#rep-count-v').textContent = repCount + ' 本';
   $('#rep-gap-v').textContent = repGap + ' cm';
   const [pos, neg] = SEC.repeatDirLabels(scalp, sec, toV(l.points[0]), toV(l.points[1]));
   $('#rep-dir-pos').textContent = pos; $('#rep-dir-neg').textContent = neg;
@@ -580,18 +580,18 @@ function makeRepeats() {
   const l = layerById(selectedId), sec = sectionOf(l);
   if (!SEC.canRepeat(sec)) return;
   const r = SEC.parallelSections(scalp, sec, toV(l.points[0]), toV(l.points[1]), { count: repCount, gapCm: repGap, dir: repDir, inside: inOutline });
-  if (!r.lines.length) { toast('這一邊畫不出來：已經到外輪廓外面' + (sec.kind === 'H' ? '，或到頭頂了' : ''), 2600); return; }
+  if (!r.lines.length) { toast('こちら側は描けません：外周ラインの外に出ています' + (sec.kind === 'H' ? '、または頭頂に届いています' : ''), 2600); return; }
   pushHistory();
   let made = 0;
   const countBefore = doc.layers.length;
   for (const ln of r.lines) {
     const n = D.newLayer({ shape: 'line', points: [ln.a, ln.b], style: { stroke: l.style.stroke, width: l.style.width }, dashed: l.dashed, arrow: l.arrow, section: { ...sec } });
-    try { addLayer(n); made++; } catch (e) { console.warn('平行重複畫不出來', e); }
+    try { addLayer(n); made++; } catch (e) { console.warn('平行に繰り返して描けません', e); }
   }
-  if (!made) { history.pop(); toast('這一邊畫不出來', 1800); return; }
+  if (!made) { history.pop(); toast('こちら側は描けません', 1800); return; }
   commit(); closePops(); requestRender();
-  const both = doc.layers.length - countBefore > made ? '（鏡像那一側也畫了）' : '';
-  toast(r.skipped ? '多畫了 ' + made + ' 條' + both + '；另外 ' + r.skipped + ' 條超出外輪廓' + (sec.kind === 'H' ? '或到頭頂了' : '') + '，沒有畫' : '多畫了 ' + made + ' 條' + both, 2800);
+  const both = doc.layers.length - countBefore > made ? '（ミラー側にも描きました）' : '';
+  toast(r.skipped ? '追加で ' + made + ' 本' + both + '。ほかに ' + r.skipped + ' 本は外周ラインの外に出るため' + (sec.kind === 'H' ? 'または頭頂に届くため' : '') + '、描いていません' : '追加で ' + made + ' 本' + both, 2800);
 }
 // 改選取中那條前斜／後斜的斜度（第一點不動，第二點沿新的切面滑過去）；下一條新畫的也用這個斜度
 function stepDiag(delta) {
@@ -601,7 +601,7 @@ function stepDiag(delta) {
   if (deg === sec.deg) return;
   const before = snapshot(), keepPts = l.points.map(P3);
   l.section = { ...sec, deg };
-  if (!refitSection(l, 0)) { l.points = keepPts; l.section = sec; toast('這個斜度在這裡畫不出來', 1800); return; }
+  if (!refitSection(l, 0)) { l.points = keepPts; l.section = sec; toast('この傾きはここでは描けません', 1800); return; }
   history.push(before); if (history.length > 60) history.shift(); future.length = 0;
   diagDeg = deg; rebuildLayer(l); syncPartner(l); commit(); updateHandles(); syncRepeatPop();
 }
@@ -611,19 +611,19 @@ function stepDiag(delta) {
 function addTemplate(key) {
   const label = TPL.TEMPLATE_LABELS[key];
   let specs;
-  try { specs = TPL.templateLines(scalp, landmarks, key, inOutline); } catch (e) { toast(label + '畫不出來：' + (e && e.message || e), 2600); return; }
+  try { specs = TPL.templateLines(scalp, landmarks, key, inOutline); } catch (e) { toast(label + 'が描けません：' + (e && e.message || e), 2600); return; }
   const fresh = specs.filter(s => !doc.layers.some(l => TPL.sameLine(l, s)));
-  if (!fresh.length) { toast('這一步已經有' + label + '了；要調整用「選取」點那條線', 2400); return; }
+  if (!fresh.length) { toast('このステップにはもう' + label + 'があります。直すときは「選択」でその線をタップ', 2400); return; }
   const st = D.defaultToolStyles().line;
   const made = fresh.map(s => ({ spec: s, layer: D.newLayer({ shape: s.shape, points: s.points, section: s.section, style: { stroke: st.stroke, width: st.width }, dashed: st.dashed, arrow: st.arrow }) }));
   pushHistory();
   const built = [];
-  for (const m of made) { doc.layers.push(m.layer); try { buildLayer(m.layer); built.push(m); } catch (e) { doc.layers.pop(); console.warn('樣板的線畫不出來', m.spec.id, e); } }
-  if (!built.length) { history.pop(); updateButtons(); toast(label + '畫不出來', 2000); return; }
+  for (const m of made) { doc.layers.push(m.layer); try { buildLayer(m.layer); built.push(m); } catch (e) { doc.layers.pop(); console.warn('テンプレートの線が描けません', m.spec.id, e); } }
+  if (!built.length) { history.pop(); updateButtons(); toast(label + 'が描けません', 2000); return; }
   if (doc.settings.mirror) for (const m of built) { const mate = m.spec.pair && built.find(x => x.spec.id === m.spec.pair); if (mate) m.layer.mirrorPairId = mate.layer.id; }
   commit(); requestRender();
   const had = specs.length - fresh.length;
-  toast(label + '畫好了（' + built.length + ' 條分線' + (had ? '；已經有的 ' + had + ' 條沒有重畫' : '') + '）。要調整用「選取」點那條線', 3000);
+  toast(label + 'を描きました（' + built.length + ' 本の分け線' + (had ? '。すでにある ' + had + ' 本は描き直していません' : '') + '）。直すときは「選択」でその線をタップ', 3000);
 }
 // ---------------------------------------------------------------- 點一下填色
 // 「面」工具第二列選「點一下填滿」：點在線圍起來的地方，就把那一塊填滿（幾何在 fill.js）。邊界＝這一步畫的線（分線、曲線、手畫線、髮片的根線、
@@ -646,18 +646,18 @@ function fillBoundaries() {
   return out;
 }
 const FILL_WHY = {
-  outside: '這裡在外輪廓外面：點外輪廓裡面、線圍起來的那一塊',
-  tiny: '這一塊太小，點不到：把畫面放大一點再點',
+  outside: 'ここは外周ラインの外です：外周ラインの内側で、線で囲まれた所をタップしてください',
+  tiny: 'この部分は小さすぎてタップできません：画面を少し拡大してからタップしてください',
 };
 function fillAt(point) {
   const C = scalp.center, P = scalp.nearest(point).point;
   const regionAt = p => { const d = p.clone().sub(C).normalize(); return doc.layers.find(l => { const o = l.shape === 'region' ? objects.get(l.id) : null; return o && insideSphericalPolygon(d, o.dense.map(q => q.clone().sub(C).normalize())); }); };
-  if (regionAt(P)) { toast('這一塊已經有顏色了：要換顏色或刪掉，用「選取」點它', 2600); return; }
+  if (regionAt(P)) { toast('ここはもう色が付いています：色を変える・消すときは「選択」でタップ', 2600); return; }
   const bounds = fillBoundaries(), lineCount = bounds.filter(b => !b.outline).length;
   let r;
-  try { r = FILL.fillCell(scalp, P, bounds); } catch (e) { console.warn('填色算不出來', e); toast('這一塊填不出來', 2000); return; }
+  try { r = FILL.fillCell(scalp, P, bounds); } catch (e) { console.warn('塗りつぶしの範囲が計算できません', e); toast('ここは塗れません', 2000); return; }
   if (!r.ok) {
-    toast(r.reason === 'open' ? (lineCount ? '這一塊沒有圍起來：線頭要接到別的線或外輪廓（差一點點會自動接上）' : '這一步還沒有線：先按上排的樣板，或用「線」畫分線，再點要填的那一塊') : FILL_WHY[r.reason] || '這一塊填不出來', 3200);
+    toast(r.reason === 'open' ? (lineCount ? 'ここは囲まれていません：線の端をほかの線か外周ラインにつないでください（少しの隙間なら自動でつながります）' : 'このステップにはまだ線がありません：上のテンプレートを押すか「線」で分け線を引いてから、塗りたい所をタップしてください') : FILL_WHY[r.reason] || 'ここは塗れません', 3200);
     return;
   }
   const st = toolStyles.region;
@@ -666,15 +666,15 @@ function fillAt(point) {
   // 鏡像：另一側對應的那一塊（不是同一塊、還沒有顏色、也圍得起來）一起填
   if (doc.settings.mirror) {
     const M = scalp.nearest(mirrorX(P)).point;
-    if (!r.contains(M) && !regionAt(M)) { try { const m = FILL.fillCell(scalp, M, bounds); if (m.ok) fresh.push(make(m.loop)); } catch (e) { console.warn('鏡像那一側填不出來', e); } }
+    if (!r.contains(M) && !regionAt(M)) { try { const m = FILL.fillCell(scalp, M, bounds); if (m.ok) fresh.push(make(m.loop)); } catch (e) { console.warn('ミラー側は塗れません', e); } }
   }
   pushHistory();
   const built = [];
-  for (const l of fresh) { doc.layers.push(l); try { buildLayer(l); built.push(l); } catch (e) { doc.layers.pop(); console.warn('填色畫不出來', e); } }
-  if (!built.length) { history.pop(); updateButtons(); toast('這一塊填不出來', 2000); return; }
+  for (const l of fresh) { doc.layers.push(l); try { buildLayer(l); built.push(l); } catch (e) { doc.layers.pop(); console.warn('塗りつぶしが描けません', e); } }
+  if (!built.length) { history.pop(); updateButtons(); toast('ここは塗れません', 2000); return; }
   if (built.length === 2) { built[0].mirrorPairId = built[1].id; built[1].mirrorPairId = built[0].id; }
   commit(); requestRender();
-  toast(built.length === 2 ? '左右兩塊都填好了。要換顏色或刪掉，用「選取」點它' : '填好了。要換顏色或刪掉，用「選取」點它', 2400);
+  toast(built.length === 2 ? '左右とも塗りました。色を変える・消すときは「選択」でタップ' : '塗りました。色を変える・消すときは「選択」でタップ', 2400);
 }
 // 樣式列在編輯誰：選取中的那一筆，或目前這個工具之後要畫的樣式（髮片工具畫的是線，但樣式算髮片的）
 function activeStyle() {
@@ -699,7 +699,7 @@ function applyStyle(partial, noHistory = false) { // noHistory：選色器拖動
   Object.assign(toolStyles[fam], partial);
   saveUI(); syncUI();
 }
-function bendLabel(l) { if (l.shape === 'line') return l.control ? '拉直' : '彎'; return '拉直'; }
+function bendLabel(l) { if (l.shape === 'line') return l.control ? 'まっすぐにする' : '曲げる'; return 'まっすぐにする'; }
 function syncUI() {
   const st = activeStyle();
   const l = selectedId ? layerById(selectedId) : null;
@@ -720,12 +720,12 @@ function syncUI() {
   // 分線形狀下面一行白話；放射多一顆「換樞軸」
   const tipKey = lineOn && tool === 'line' && !l ? lineShape : null;
   $('#line-tip').hidden = !LINE_TIPS[tipKey];
-  if (LINE_TIPS[tipKey]) $('#line-tip-text').textContent = pickingPivot ? '點一下頭皮：放射線都從這一點出發（會吸到十五點）。'
-    : tipKey === 'r' ? LINE_TIPS.r.replace('樞軸', radPivot ? '樞軸（你放的那一點）' : '樞軸（頭頂）')
+  if (LINE_TIPS[tipKey]) $('#line-tip-text').textContent = pickingPivot ? '頭皮をタップ：放射線はすべてこの点から出ます（15ポイントにスナップします）。'
+    : tipKey === 'r' ? LINE_TIPS.r.replace('中心点', radPivot ? '中心点（自分で置いた点）' : '中心点（頭頂）')
     : tipKey === 'f' || tipKey === 'b' ? LINE_TIPS[tipKey].replace('：', ' ' + diagDeg + '°：') : LINE_TIPS[tipKey];
   $('#pivot-btn').hidden = tipKey !== 'r';
   $('#pivot-btn').setAttribute('aria-pressed', String(pickingPivot));
-  $('#pivot-btn-text').textContent = pickingPivot ? '回頭頂' : '換樞軸';
+  $('#pivot-btn-text').textContent = pickingPivot ? '頭頂に戻す' : '中心点を変える';
   document.querySelectorAll('[data-lshape]').forEach(b => b.classList.toggle('on', b.dataset.lshape === lineShape));
   // 樣式列：畫圖工具，或選到髮片類以外的一筆時出現
   $('#stylerow').hidden = isLift || !st;
@@ -750,7 +750,7 @@ function syncUI() {
   if (l) {
     const single = ['point', 'strand', 'fan'].includes(l.shape);
     const sec = sectionOf(l);
-    $('#sel-label').textContent = sec ? SEC.SECTION_LABELS[sec.kind] + '線' : l.poly ? '填滿的面' : D.SHAPE_LABELS[l.shape];
+    $('#sel-label').textContent = sec ? SEC.SECTION_LABELS[sec.kind] + '線' : l.poly ? '塗りつぶした面' : D.SHAPE_LABELS[l.shape];
     $('#sel-repeat').hidden = !SEC.canRepeat(sec); // 水平、垂直、前斜、後斜 → 平行重複（斜度也在裡面）
     if ($('#sel-repeat').hidden && !$('#repeat-pop').hidden) closePops();
     // 選取列：線→反轉／彎／刪點／拉成髮片；點→提拉線／角度扇形；髮片類→反轉／刪點／更多；用不到的鈕藏起來
@@ -808,7 +808,7 @@ function syncPartner(l, styleOnly = false) {
     if (p.label) n.label = p.label; // 標字是每一筆自己的，同步形狀時留著
     if (styleOnly) { n.points = p.points; n.control = p.control ?? null; if (p.bends) n.bends = p.bends; if (p.lift) n.lift = p.lift; if (p.section) n.section = p.section; else delete n.section; }
     doc.layers[idx] = n; rebuildLayer(n);
-  } else { delete p.mirrorPairId; delete l.mirrorPairId; toast('鏡像關著：這一筆已和另一側解除配對'); }
+  } else { delete p.mirrorPairId; delete l.mirrorPairId; toast('ミラーはオフ：この線はもう片側との組み合わせを解除しました'); }
 }
 function deleteLayer(l) {
   pushHistory();
@@ -869,8 +869,8 @@ function renderPreview() {
 function updateDraftBar() {
   const bar = $('#draftbar'); if (!draft) { bar.hidden = true; return; }
   const n = draft.points.length, done = $('#draft-done'), txt = $('#draft-text');
-  if (draft.kind === 'line') { bar.hidden = n !== 1; txt.textContent = '再點一下終點'; done.hidden = true; }
-  else if (draft.kind === 'region') { bar.hidden = false; done.hidden = false; txt.textContent = n < 3 ? '再點下一個點（至少 3 點）' : '已點 ' + n + ' 點'; done.disabled = n < 3; }
+  if (draft.kind === 'line') { bar.hidden = n !== 1; txt.textContent = '終点をタップしてください'; done.hidden = true; }
+  else if (draft.kind === 'region') { bar.hidden = false; done.hidden = false; txt.textContent = n < 3 ? '次の点をタップ（3点以上）' : n + ' 点タップ済み'; done.disabled = n < 3; }
   else bar.hidden = true;
 }
 function cancelDraft() { if (!draft) return; clearPreview(); draft = null; clearSnap(); updateDraftBar(); updateHandles(); requestRender(); }
@@ -886,11 +886,11 @@ function createLayer(shape, points, st, extra = {}) {
   if (D.minPoints(shape) > 1) {
     let len = 0; for (let i = 1; i < pts.length; i++) len += pts[i].distanceTo(pts[i - 1]);
     if (shape === 'region') len += pts[0].distanceTo(pts[pts.length - 1]);
-    if (len < MIN_LEN) { toast('太短了，再拉長一點', 1500); requestRender(); return null; }
+    if (len < MIN_LEN) { toast('短すぎます。もう少し長く引いてください', 1500); requestRender(); return null; }
   }
   const layer = D.newLayer({ shape, points: pts, style: { stroke: st.stroke, width: st.width }, dashed: st.dashed, arrow: st.arrow, ...extra });
   pushHistory();
-  try { addLayer(layer); } catch (e) { history.pop(); toast('這一筆畫不出來：' + e.message); requestRender(); return null; }
+  try { addLayer(layer); } catch (e) { history.pop(); toast('この線は描けません：' + e.message); requestRender(); return null; }
   commit(); requestRender(); return layer;
 }
 // 點到哪一筆：先看離線最近（12 px 內），再看點在哪個區塊裡面
@@ -1010,7 +1010,7 @@ document.addEventListener('pointerdown', e => {
 }, true);
 // 長按一筆＝切到選取並選它（任何畫圖工具；線在輪廓線外也可以）
 function armLongPress() {
-  longTimer = setTimeout(() => { if (!gesture || gesture.moved) return; const target = hitLayer(gesture.hit); if (target) { gesture.kind = 'longpress'; setTool('select'); select(target.id); toast('已選取，可拖控制點', 1200); } }, LONG_MS);
+  longTimer = setTimeout(() => { if (!gesture || gesture.moved) return; const target = hitLayer(gesture.hit); if (target) { gesture.kind = 'longpress'; setTool('select'); select(target.id); toast('選択しました。調整点をドラッグできます', 1200); } }, LONG_MS);
 }
 
 canvas.addEventListener('pointerdown', e => {
@@ -1052,7 +1052,7 @@ canvas.addEventListener('pointerdown', e => {
     if (!hit) { if (selectedId) gesture.kind = 'empty'; return; } // 點到頭外面＝取消選取（和選取工具一樣）
     const sect = drawSection();
     // 放射：正在換樞軸＝這一下是放樞軸（吸得到十五點），不畫線
-    if (sect && sect.kind === 'R' && pickingPivot) { radPivot = snap(hit.point.clone()); clearSnap(); pickingPivot = false; cancelDraft(); gesture.kind = 'pivot'; toast('樞軸放好了：點一下頭皮就從這裡拉一條線', 2200); syncUI(); updateHandles(); return; }
+    if (sect && sect.kind === 'R' && pickingPivot) { radPivot = snap(hit.point.clone()); clearSnap(); pickingPivot = false; cancelDraft(); gesture.kind = 'pivot'; toast('中心点を置きました：頭皮をタップすると、ここから線を引きます', 2200); syncUI(); updateHandles(); return; }
     if (draft && draft.kind === 'line' && draft.points.length === 1) { gesture.kind = 'line-end'; if (!setDraftEnd(lineEndAt(hit))) draft.points.length = 1; renderPreview(); updateHandles(); return; }
     // 第一下落在把手以外的地方＝新線的起點（不是取消選取）；先收掉選取，把手才不會跟新線的終點搶位置
     cancelDraft(); if (selectedId) select(null);
@@ -1136,7 +1136,7 @@ function endGesture(e) {
     case 'line-end': {
       const d = draft; cancelDraft();
       if (d && d.points.length === 2) finishLine(d, st);
-      else if (d && d.sect) toast('這裡畫不過去：中間會跑出頭皮，換個位置或分兩段畫', 2400); // 分線的切面走不到手指那裡
+      else if (d && d.sect) toast('ここは引けません：途中で頭皮の外に出ます。位置を変えるか、2回に分けて引いてください', 2400); // 分線的切面走不到手指那裡
       break;
     }
     case 'region-pt': clearSnap(); updateDraftBar(); break;
@@ -1147,7 +1147,7 @@ function endGesture(e) {
       if (!l) break;
       if (!g.moved && !g.inserted) { syncUI(); updateHandles(); break; }
       const collapsed = l.points.length > 1 && l.points.some((p, i) => l.points.some((q, j) => j > i && toV(p).distanceTo(toV(q)) < COLLAPSE));
-      if (collapsed) { restoreOrig(l, g.orig); if (g.inserted) history.pop(); rebuildLayer(l); toast('兩點太近，已還原', 1500); }
+      if (collapsed) { restoreOrig(l, g.orig); if (g.inserted) history.pop(); rebuildLayer(l); toast('2点が近すぎるので元に戻しました', 1500); }
       else { if (!g.inserted) { history.push(g.before); if (history.length > 60) history.shift(); future.length = 0; } syncPartner(layerById(l.id)); commit(); } // 復原點＝開始拖的那一刻
       select(l.id, activeHandle); break;
     }
@@ -1160,15 +1160,15 @@ function endGesture(e) {
     case 'orbit': // 單指轉動：拖了就是轉（OrbitControls 做完了）；點一下＝取消選取，或第一次提示線外不能畫
       if (g.moved || mode === 'preview') break;
       if (selectedId && !draft) select(null);
-      else if (g.hit && TOOLS[tool].shape && !outsideHinted) { outsideHinted = true; toast('輪廓線外面單指是轉頭；要畫請從輪廓線裡面開始', 2600); }
+      else if (g.hit && TOOLS[tool].shape && !outsideHinted) { outsideHinted = true; toast('外周ラインの外を1本指でドラッグすると頭が回ります。描くときは外周ラインの内側から始めてください', 2600); }
       break;
     case 'cut': {
       cutTrail(null);
       if (!l) break;
-      if (!g.moved) { toast('按住小剪刀、橫向拖過髮片就是切口（剪刀只會剪短；復原可退）', 3000); break; }
+      if (!g.moved) { toast('小さいハサミを押したまま、パネルを横切るようにドラッグすると切り口になります（短くするだけです。元に戻すで戻せます）', 3000); break; }
       pushHistory();
-      if (applyCut(l, g.trail)) { rebuildLayer(l); syncPartner(l); commit(); toast(l.lift.cut ? '切口剪好了：橘色實線＝剪線；「更多」裡可以還原' : '剪在髮尾外面，切口還原成沒剪', 2400); }
-      else { history.pop(); toast('剪刀沒碰到髮束：從髮尾線外面橫向拖過髮片', 2400); }
+      if (applyCut(l, g.trail)) { rebuildLayer(l); syncPartner(l); commit(); toast(l.lift.cut ? '切り口を切りました：オレンジの実線＝カットライン。「その他」で元に戻せます' : '毛先より外を切ったので、切り口を切る前に戻しました', 2400); }
+      else { history.pop(); toast('ハサミが毛束に当たっていません：毛先の線の外から、パネルを横切るようにドラッグしてください', 2400); }
       select(l.id, null); break;
     }
     default: break;
@@ -1198,13 +1198,13 @@ function autoSelect(layer) {
   if (tool === 'panel') {
     if (fallen) setFallen(false); // 新髮片要看得到提拉
     try { D.convertToLift(layer, 'panel', null); rebuildLayer(layer); syncPartner(layer); commit(); }
-    catch (e) { toast('變不成髮片：' + e.message); }
+    catch (e) { toast('パネルにできません：' + e.message); }
     select(layer.id);
-    if (!panelHinted) { panelHinted = true; toast('髮片：下面選提拉；藍色剪刀可以剪切口', 2600); }
+    if (!panelHinted) { panelHinted = true; toast('パネル：下でリフトを選びます。青いハサミで切り口を切れます', 2600); }
     return;
   }
   select(layer.id);
-  if (!autoSelectHinted) { autoSelectHinted = true; toast('拖中間的小方塊可以調彎度；點頭外面取消選取', 2600); }
+  if (!autoSelectHinted) { autoSelectHinted = true; toast('真ん中の四角をドラッグすると曲がり具合を変えられます。頭の外をタップすると選択を外します', 2600); }
 }
 let panelHinted = false;
 canvas.addEventListener('pointerup', endGesture); canvas.addEventListener('pointercancel', endGesture);
@@ -1262,14 +1262,14 @@ function toLiftShape(shape) {
   // 分線拉成髮片，根線要照著切面走——髮片的根線是「通過每個點的曲線」，所以沿著切面每 1.5 cm 留一個點（只留兩端會變成最短線）
   const secDense = shape === 'panel' && sectionOf(l) && objects.get(l.id) ? objects.get(l.id).dense : null;
   if (secDense && secDense.length >= 2) l.points = SEC.sectionControlPoints(scalp, secDense).map(P3);
-  try { D.convertToLift(l, shape, bend); rebuildLayer(l); } catch (e) { history.pop(); toast('變不成' + D.SHAPE_LABELS[shape] + '：' + e.message); return; }
+  try { D.convertToLift(l, shape, bend); rebuildLayer(l); } catch (e) { history.pop(); toast(D.SHAPE_LABELS[shape] + 'にできません：' + e.message); return; }
   syncPartner(l); commit(); select(l.id);
-  toast(shape === 'panel' ? '線變成髮片了：下面調角度與髮長，藍色剪刀可以剪切口' : '點變成' + D.SHAPE_LABELS[shape] + '了：下面調整', 2600);
+  toast(shape === 'panel' ? '線をパネルにしました：下で角度と長さを調整し、青いハサミで切り口を切れます' : '点を' + D.SHAPE_LABELS[shape] + 'にしました：下で調整してください', 2600);
 }
 // 改髮片參數。live＝滑桿拖動中（第一下推歷史、之後不推、不存檔；放開時 commitLift）
 function setLift(partial, live = false) {
   const l = layerById(selectedId); if (!l || !l.lift) return;
-  if (fallen && ['elevation', 'swivel', 'reference', 'fixed'].some(k => k in partial)) { setFallen(false); toast('先拉起來，才看得到提拉的角度', 1800); } // 放下時角度看不出來
+  if (fallen && ['elevation', 'swivel', 'reference', 'fixed'].some(k => k in partial)) { setFallen(false); toast('引き出すと、リフトの角度が見えます', 1800); } // 放下時角度看不出來
   if (!live || !liftLive) pushHistory();
   if (live) liftLive = true;
   // 自己改了角度、髮長或切口＝不再跟前一片（先把前一片的值接過來）
@@ -1298,7 +1298,7 @@ function syncLiftCard(l) {
   $('#lift-elev').value = lf.elevation; $('#lift-elev-v').textContent = lf.elevation + '°';
   $('#lift-len-v').textContent = fmtLen(lf.length_cm);
   // 基準兩選一：髮片是「髮片中心」，一個毛根的提拉線／扇形同一鈕叫「頭皮」
-  card.querySelectorAll('[data-ref]').forEach(b => { b.classList.toggle('on', b.dataset.ref === lf.reference); if (b.dataset.ref === 'CENTER') b.textContent = l.shape === 'panel' ? '髮片中心' : '頭皮'; });
+  card.querySelectorAll('[data-ref]').forEach(b => { b.classList.toggle('on', b.dataset.ref === lf.reference); if (b.dataset.ref === 'CENTER') b.textContent = l.shape === 'panel' ? 'パネルの中心' : '頭皮'; });
   // 轉向＝髮尾線沿根線方向橫移（正值朝臉前），任何提拉角度都有作用；扇形沒有這一列（data-for）
   $('#lift-swivel').value = lf.swivel; $('#lift-swivel-v').textContent = (lf.swivel > 0 ? '+' : '') + lf.swivel + '°';
   card.querySelectorAll('[data-style]').forEach(b => b.classList.toggle('on', b.dataset.style === lf.style));
@@ -1314,7 +1314,7 @@ function setFixedDir(kind) {
   const l = layerById(selectedId); if (!l || !l.lift || !FIXED_DIRS.includes(kind)) return;
   if ((l.shape === 'panel' ? effLift(l) : l.lift).fixed === kind && !l.lift.follow) return;
   lastFixed = kind; setLift({ fixed: kind });
-  if (!fixedHinted) { fixedHinted = true; toast('固定方向：整片頭髮都朝同一個方向拉，不跟頭皮的弧度走（方形層次）', 3200); }
+  if (!fixedHinted) { fixedHinted = true; toast('方向固定：パネル全体を同じ方向に引き出し、頭の丸みに沿わせません（スクエアレイヤー）', 3200); }
 }
 // 按住 −／＋ 連發：先一下，400 ms 後每 90 ms 一下
 function holdRepeat(btn, fn) {
@@ -1341,7 +1341,7 @@ document.querySelectorAll('#lift-preset [data-preset]').forEach(b => b.addEventL
 document.querySelectorAll('#lift-fixed [data-fixed]').forEach(b => b.addEventListener('click', () => setFixedDir(b.dataset.fixed)));
 document.querySelectorAll('#lift-guide [data-guide]').forEach(b => b.addEventListener('click', () => setGuide(b.dataset.guide)));
 document.querySelectorAll('#lift-style [data-style]').forEach(b => b.addEventListener('click', () => setLift({ style: b.dataset.style })));
-$('#lift-cut-reset').addEventListener('click', () => { const l = layerById(selectedId); if (l && l.lift && l.lift.cut) { setLift({ cut: null }); toast('切口還原了，髮尾回到虛線', 1600); } });
+$('#lift-cut-reset').addEventListener('click', () => { const l = layerById(selectedId); if (l && l.lift && l.lift.cut) { setLift({ cut: null }); toast('切り口を元に戻しました。毛先は点線に戻りました', 1600); } });
 
 // ---------------------------------------------------------------- 小剪刀
 // 選取髮片時，髮尾線的一端外面有一把藍色小剪刀；按住它橫向拖過髮片，拖過的軌跡就是切口。
@@ -1416,18 +1416,18 @@ function setGuide(kind) {
   const l = layerById(selectedId); if (!l || l.shape !== 'panel') return;
   if (kind === 'follow') {
     if (l.lift.follow) return;
-    if (!previousPanel(doc.layers, l)) { toast('這一步前面沒有別的髮片：先畫前一片，後面畫的才能「跟前一片」', 3200); return; }
+    if (!previousPanel(doc.layers, l)) { toast('このステップには前のパネルがありません：先に前のパネルを描くと、次から「前のパネルに合わせる」が使えます', 3200); return; }
     pushHistory();
     l.lift = normalizeLift({ ...l.lift, follow: true });
     D.normalizeStyle(l); rebuildLayer(l); syncPartner(l); commit(); syncUI();
-    toast('跟前一片：角度、髮長、切口都照前一片；前一片改了它也跟著改', 3200);
+    toast('前のパネルに合わせる：角度・長さ・切り口を前のパネルと同じにします。前のパネルを変えるとこちらも変わります', 3200);
     return;
   }
   if (!l.lift.follow) return;
   pushHistory();
   l.lift = normalizeLift({ ...effLift(l), follow: false }); // 現在看到的角度、髮長、切口留著，變成它自己的設定
   D.normalizeStyle(l); rebuildLayer(l); syncPartner(l); commit(); syncUI();
-  toast('改回自己設定：角度和髮長照現在的樣子，之後自己調', 2400);
+  toast('自分で設定に戻しました：角度と長さは今のまま、あとは自分で調整します', 2400);
 }
 
 // 放下／拉起：全部重建（這一步的筆和淡色的前面步驟一起）。放下後髮尾跑到畫面外面就自動拉遠；拉起時鏡頭沒再動過就拉回放下前的大小。
@@ -1447,12 +1447,12 @@ function syncFallBtn() {
   const b = $('#fall-btn');
   b.hidden = !hasHair(); // 這一步（含淡色的前面步驟）有髮片或提拉線才出現
   b.setAttribute('aria-pressed', String(fallen));
-  $('#fall-text').textContent = fallen ? '拉起' : '放下';
+  $('#fall-text').textContent = fallen ? '引き出す' : '下ろす';
   b.querySelector('use').setAttribute('href', fallen ? '#i-liftup' : '#i-fall');
 }
 $('#fall-btn').addEventListener('click', () => {
   setFallen(!fallen);
-  if (fallen && !fallHinted) { fallHinted = true; toast('放下：每根頭髮照自己的長度自然垂下來；再按一次拉起', 2800); }
+  if (fallen && !fallHinted) { fallHinted = true; toast('下ろす：毛束がそれぞれの長さで自然に下がります。もう一度押すと引き出します', 2800); }
 });
 
 // 彎直：直線沒彎→給一個彎度（彎度點往旁邊推 15% 線長）；直線有彎→拉直；曲線／手畫線→變直線（留兩端）
@@ -1482,8 +1482,8 @@ function stamp() { const d = new Date(), p = n => String(n).padStart(2, '0'); re
 function downloadBlob(blob, name) { const a = document.createElement('a'); const url = URL.createObjectURL(blob); a.href = url; a.download = name; a.rel = 'noopener'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); }
 async function shareBlob(blob, name, title) {
   const file = new File([blob], name, { type: blob.type });
-  if (!navigator.share || !(navigator.canShare && navigator.canShare({ files: [file] }))) { toast('這個瀏覽器不支援分享檔案，改用下載'); downloadBlob(blob, name); return; }
-  try { await navigator.share({ files: [file], title }); } catch (e) { if (e && e.name !== 'AbortError') toast('分享失敗：' + e.message); }
+  if (!navigator.share || !(navigator.canShare && navigator.canShare({ files: [file] }))) { toast('このブラウザはファイルの共有に対応していないため、ダウンロードにします'); downloadBlob(blob, name); return; }
+  try { await navigator.share({ files: [file], title }); } catch (e) { if (e && e.name !== 'AbortError') toast('共有できませんでした：' + e.message); }
 }
 // matchScreen＝照畫面的長寬比（看到什麼存什麼，預覽的「儲存照片」用）；不給＝正方形
 async function pngBlob(size = 2000, matchScreen = false) {
@@ -1506,10 +1506,10 @@ async function pngBlob(size = 2000, matchScreen = false) {
 async function importFile(file) {
   try {
     const { added, media } = L.importInto(lib, await file.text());
-    for (const [id, url] of Object.entries(media)) await flat.media.putDataUrl(id, url).catch(e => console.warn('照片存不下來', id, e));
+    for (const [id, url] of Object.entries(media)) await flat.media.putDataUrl(id, url).catch(e => console.warn('写真を保存できません', id, e));
     saveLib(); renderHome();
-    toast('匯入完成：' + added.map(d => d.title).join('、'), 3000);
-  } catch (e) { toast('匯入失敗：' + e.message, 4000); }
+    toast('読み込みました：' + added.map(d => d.title).join('、'), 3000);
+  } catch (e) { toast('読み込めませんでした：' + e.message, 4000); }
 }
 // 眼睛選單、視角選單的開關照設定顯示
 function applySettings() {
@@ -1535,7 +1535,7 @@ function openStep(i, { keepView = false } = {}) {
   fallen = !!curStep().fall; fallZoom = null; // 這一步記住的「放下」
   for (const id of [...objects.keys()]) removeObject(id);
   try { doc = { layers: L.stepLayers(curStep()), settings: lib.settings }; }
-  catch (e) { toast('這一步的圖讀不進來：' + e.message, 4000); doc = { layers: [], settings: lib.settings }; }
+  catch (e) { toast('このステップの図が読み込めません：' + e.message, 4000); doc = { layers: [], settings: lib.settings }; }
   rebuild(); buildGhosts();
   if (!keepView) { applyStepView(); if (fallen) ensureVisible(fallTips(), 0.92); }
   saveLib(); updateButtons(); renderChrome();
@@ -1546,7 +1546,7 @@ async function openDrawing(id, i = null, nextMode = null) {
   const d = L.drawingById(lib, id); if (!d) return;
   const want = H.headOf(headList, d);
   if (d.head !== want) { d.head = want; saveLib(); } // 記的那顆不在清單裡：改用預設那顆
-  try { await useHead(want); } catch (e) { toast('頭模載入失敗：' + e.message, 4000); return; }
+  try { await useHead(want); } catch (e) { toast('ヘッドを読み込めませんでした：' + e.message, 4000); return; }
   if (drawing && L.is2d(drawing) && drawing !== d) flat.close();
   drawing = d;
   document.body.dataset.kind = d.kind;
@@ -1561,19 +1561,19 @@ async function openDrawing(id, i = null, nextMode = null) {
 // 這張頭圖換一顆頭模：已經畫的圖跟著搬到新頭上相對的位置（transfer.js；2D 在 flat/editor.js 裡搬）
 async function switchHead(id) {
   if (!drawing || id === drawing.head) return;
-  if (!transferCtx) { toast('換頭模的對照資料讀不到，不能換'); return; }
+  if (!transferCtx) { toast('ヘッドを切り替えるための対応データが読めないため、切り替えられません'); return; }
   if (!L.is2d(drawing)) save();
   const from = drawing.head;
   let h;
-  try { h = await useHead(id); } catch (e) { toast('頭模載入失敗：' + e.message, 4000); return; }
+  try { h = await useHead(id); } catch (e) { toast('ヘッドを読み込めませんでした：' + e.message, 4000); return; }
   let n = 0;
   try {
     if (L.is2d(drawing)) n = await flat.switchHead(h, from, transferCtx);
     else n = TR.convertDrawing(drawing, id, transferCtx, projectOnScalp);
-  } catch (e) { toast('圖搬不過去：' + e.message, 4000); await useHead(from); return; }
+  } catch (e) { toast('図を移せません：' + e.message, 4000); await useHead(from); return; }
   drawing.head = id; L.touch(drawing); saveLib();
   openStep(stepIndex, { keepView: true });
-  toast('換成' + H.headLabel(h.model) + (n ? '，' + n + ' 筆圖跟著搬過去了' : ''), 3000);
+  toast(H.headLabel(h.model) + 'に切り替えました' + (n ? '。' + n + ' 個の線も一緒に移しました' : ''), 3000);
 }
 // 換畫面：home＝我的頭圖、draw＝畫圖、preview＝預覽（工具收起來，只剩頭模和換步驟）
 function setMode(m, reopen = true) {
@@ -1607,7 +1607,7 @@ function renderChrome() {
 function renderStrip() {
   const strip = $('#strip');
   strip.innerHTML = drawing.steps.map((s, i) => `<button type="button" role="tab" data-step="${i}" class="${i === stepIndex ? 'on' : ''}${L.stepItems(s).length ? ' has' : ''}" aria-selected="${i === stepIndex}" aria-label="${esc(L.stepLabel(i) + ' ' + L.stepName(drawing, i))}">${L.stepLabel(i)}</button>`).join('')
-    + '<button type="button" class="add" aria-label="在這一步後面加一步"><svg><use href="#i-plus"/></svg></button>';
+    + '<button type="button" class="add" aria-label="このステップの後ろに追加"><svg><use href="#i-plus"/></svg></button>';
   const on = strip.querySelector('.on'); if (on) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -1632,27 +1632,27 @@ function goStep(d) { const j = stepIndex + d; if (j < 0 || j >= drawing.steps.le
 // ---------------------------------------------------------------- 首頁：我的頭圖（全部、收藏、資料夾、回收桶；排序、搜尋）
 const home = { box: 'all', sort: 'updated', query: '' };
 const thumbUrls = new Map(); // 頭圖 id → 縮圖的 object URL（縮圖存在 IndexedDB）
-const kindLabel = d => (L.is2d(d) ? '2D 五視圖' : '3D');
+const kindLabel = d => (L.is2d(d) ? '2D 5方向' : '3D');
 function renderHome() {
   if (!['all', 'star', 'trash'].includes(home.box) && !lib.folders.some(f => f.id === home.box)) home.box = 'all';
   const cur = lib.current && lib.current.drawingId, trash = home.box === 'trash';
-  const boxes = [['all', '全部'], ['star', '★ 收藏'], ...lib.folders.map(f => [f.id, f.name])];
+  const boxes = [['all', 'すべて'], ['star', '★ お気に入り'], ...lib.folders.map(f => [f.id, f.name])];
   $('#home-boxes').innerHTML = boxes.map(([id, name]) => `<button type="button" class="chip${home.box === id ? ' on' : ''}" data-box="${esc(id)}">${esc(name)}</button>`).join('')
-    + '<button type="button" class="chip add" id="home-add-folder" aria-label="新增資料夾"><svg><use href="#i-folder-plus"/></svg></button>'
-    + `<button type="button" class="chip${trash ? ' on' : ''}" data-box="trash"><svg><use href="#i-trash"/></svg><span>回收桶</span></button>`;
+    + '<button type="button" class="chip add" id="home-add-folder" aria-label="フォルダを追加"><svg><use href="#i-folder-plus"/></svg></button>'
+    + `<button type="button" class="chip${trash ? ' on' : ''}" data-box="trash"><svg><use href="#i-trash"/></svg><span>ゴミ箱</span></button>`;
   document.querySelectorAll('#home-sort [data-sort]').forEach(b => b.classList.toggle('on', b.dataset.sort === home.sort));
   const list = L.listDrawings(lib, home);
   const folderName = id => (lib.folders.find(f => f.id === id) || {}).name;
   $('#home-list').innerHTML = list.length ? list.map(d => {
     const drawn = d.steps.filter(s => L.stepItems(s).length).length, m = H.modelById(headList, H.headOf(headList, d));
-    const sub = [kindLabel(d), m ? m.label : '', d.steps.length + ' 步' + (drawn ? '（已畫 ' + drawn + '）' : ''), d.folder && home.box === 'all' ? '📁 ' + folderName(d.folder) : ''].filter(Boolean).join('・');
-    const when = trash ? '刪除於 ' + shortDate(d.trashedAt) : shortDate(d.updatedAt);
+    const sub = [kindLabel(d), m ? m.label : '', d.steps.length + ' ステップ' + (drawn ? '（描いた線 ' + drawn + '）' : ''), d.folder && home.box === 'all' ? '📁 ' + folderName(d.folder) : ''].filter(Boolean).join('・');
+    const when = trash ? '削除日 ' + shortDate(d.trashedAt) : shortDate(d.updatedAt);
     const thumb = thumbUrls.get(d.id);
     return `<div class="drawing-item${d.id === cur ? ' cur' : ''}${trash ? ' trashed' : ''}" data-drawing="${esc(d.id)}">`
-      + `<button type="button" class="di-open" data-open="${esc(d.id)}" aria-label="打開${esc(d.title)}"><span class="di-ico${thumb ? ' has' : ''}" data-thumb="${esc(d.id)}">${thumb ? `<img alt="" src="${thumb}">` : esc([...d.title][0] || '?')}</span>`
+      + `<button type="button" class="di-open" data-open="${esc(d.id)}" aria-label="開く${esc(d.title)}"><span class="di-ico${thumb ? ' has' : ''}" data-thumb="${esc(d.id)}">${thumb ? `<img alt="" src="${thumb}">` : esc([...d.title][0] || '?')}</span>`
       + `<span class="di-txt"><span class="di-t">${d.star ? '<b class="star">★</b>' : ''}${esc(d.title)}</span><span class="di-s">${esc(sub)}</span><span class="di-s">${esc(when)}</span></span></button>`
-      + `<button type="button" class="ic di-more" data-more="${esc(d.id)}" aria-label="${esc(d.title)}的更多動作"><svg><use href="#i-more"/></svg></button></div>`;
-  }).join('') : `<p class="home-empty">${trash ? '回收桶是空的' : home.query ? '找不到「' + esc(home.query) + '」' : home.box === 'all' ? '還沒有頭圖，按右上角的＋開始畫' : '這裡還沒有頭圖'}</p>`;
+      + `<button type="button" class="ic di-more" data-more="${esc(d.id)}" aria-label="${esc(d.title)}のその他の操作"><svg><use href="#i-more"/></svg></button></div>`;
+  }).join('') : `<p class="home-empty">${trash ? 'ゴミ箱は空です' : home.query ? '「' + esc(home.query) + '」は見つかりません' : home.box === 'all' ? 'カット図はまだありません。右上の＋で描き始めましょう' : 'ここにはまだカット図がありません'}</p>`;
   loadThumbs(list);
 }
 const shortDate = iso => { const t = new Date(iso); if (Number.isNaN(+t)) return ''; const p = n => String(n).padStart(2, '0'); return t.getFullYear() + '/' + p(t.getMonth() + 1) + '/' + p(t.getDate()) + ' ' + p(t.getHours()) + ':' + p(t.getMinutes()); };
@@ -1674,7 +1674,7 @@ async function saveThumb(d) {
     await flat.media.put('thumb:' + d.id, blob);
     if (thumbUrls.has(d.id)) URL.revokeObjectURL(thumbUrls.get(d.id));
     thumbUrls.delete(d.id);
-  } catch (e) { console.warn('縮圖存不下來', e); }
+  } catch (e) { console.warn('サムネイルを保存できません', e); }
 }
 // 回收桶裡超過 30 天的頭圖：連照片一起清掉
 function purgeTrash() {
@@ -1688,7 +1688,7 @@ function removeDrawingFiles(d) {
   for (const id of ids) if (!still.has(id)) flat.media.del(id).catch(() => {});
 }
 $('#home-boxes').addEventListener('click', e => {
-  if (e.target.closest('#home-add-folder')) { const n = prompt('新資料夾的名字'); if (n === null) return; try { const f = L.addFolder(lib, n); home.box = f.id; saveLib(); renderHome(); } catch (err) { toast(err.message); } return; }
+  if (e.target.closest('#home-add-folder')) { const n = prompt('新しいフォルダの名前'); if (n === null) return; try { const f = L.addFolder(lib, n); home.box = f.id; saveLib(); renderHome(); } catch (err) { toast(err.message); } return; }
   const b = e.target.closest('[data-box]'); if (!b) return;
   if (home.box === b.dataset.box && lib.folders.some(f => f.id === b.dataset.box)) { openFolderSheet(b.dataset.box); return; } // 再按一次已選的資料夾＝改名、刪除
   home.box = b.dataset.box; renderHome();
@@ -1706,7 +1706,7 @@ $('#home-list').addEventListener('click', e => {
 // 2D 固定用 heads.json 的 default2d（頭模 2），不能換
 const newsheet = $('#newsheet');
 function renderHeadChoices(el, chosen) {
-  el.innerHTML = headList.models.map(m => `<button type="button" class="head-opt${m.id === chosen ? ' on' : ''}" data-head="${esc(m.id)}" aria-pressed="${m.id === chosen}"><b>${esc(m.label)}</b><span>${esc(m.sub)}</span>${m.id === headList.default ? '<em>預設</em>' : ''}</button>`).join('');
+  el.innerHTML = headList.models.map(m => `<button type="button" class="head-opt${m.id === chosen ? ' on' : ''}" data-head="${esc(m.id)}" aria-pressed="${m.id === chosen}"><b>${esc(m.label)}</b><span>${esc(m.sub)}</span>${m.id === headList.default ? '<em>標準</em>' : ''}</button>`).join('');
 }
 $('#home-new').addEventListener('click', () => { $('#ns-title').value = ''; newsheet.showModal(); });
 $('#ns-kind').addEventListener('click', e => {
@@ -1729,36 +1729,36 @@ function openItemSheet(id) {
   const trash = !!d.trashedAt;
   for (const el of itemsheet.querySelectorAll('[data-live]')) el.hidden = trash;
   for (const el of itemsheet.querySelectorAll('[data-trash]')) el.hidden = !trash;
-  $('#is-star').textContent = d.star ? '取消收藏' : '★ 加入收藏';
-  $('#is-folder').innerHTML = '<option value="">（不放資料夾）</option>' + lib.folders.map(f => `<option value="${esc(f.id)}"${d.folder === f.id ? ' selected' : ''}>${esc(f.name)}</option>`).join('');
+  $('#is-star').textContent = d.star ? 'お気に入りから外す' : '★ お気に入りに追加';
+  $('#is-folder').innerHTML = '<option value="">（フォルダに入れない）</option>' + lib.folders.map(f => `<option value="${esc(f.id)}"${d.folder === f.id ? ' selected' : ''}>${esc(f.name)}</option>`).join('');
   itemsheet.showModal();
 }
 const itemDrawing = () => L.drawingById(lib, itemId);
 itemsheet.addEventListener('click', e => { if (e.target === itemsheet) itemsheet.close(); });
 $('#is-close').addEventListener('click', () => itemsheet.close());
 $('#is-open').addEventListener('click', () => { itemsheet.close(); openDrawing(itemId, null, 'draw'); });
-$('#is-rename').addEventListener('click', () => { const d = itemDrawing(); const n = prompt('頭圖的名字', d.title); if (n === null) return; d.title = n.trim().slice(0, 40) || L.UNTITLED; L.touch(d); saveLib(); itemsheet.close(); renderHome(); });
+$('#is-rename').addEventListener('click', () => { const d = itemDrawing(); const n = prompt('カット図の名前', d.title); if (n === null) return; d.title = n.trim().slice(0, 40) || L.UNTITLED; L.touch(d); saveLib(); itemsheet.close(); renderHome(); });
 $('#is-star').addEventListener('click', () => { const d = itemDrawing(); if (d.star) delete d.star; else d.star = true; saveLib(); itemsheet.close(); renderHome(); });
-$('#is-folder').addEventListener('change', e => { const d = itemDrawing(); if (e.target.value) d.folder = e.target.value; else delete d.folder; saveLib(); itemsheet.close(); renderHome(); toast(e.target.value ? '移到「' + lib.folders.find(f => f.id === e.target.value).name + '」' : '移出資料夾'); });
-$('#is-dup').addEventListener('click', async () => { const d = itemDrawing(); const c = L.duplicateDrawing(lib, d); const t = await flat.media.get('thumb:' + d.id).catch(() => null); if (t) await flat.media.put('thumb:' + c.id, t).catch(() => {}); saveLib(); itemsheet.close(); renderHome(); toast('複製好了：' + c.title); });
+$('#is-folder').addEventListener('change', e => { const d = itemDrawing(); if (e.target.value) d.folder = e.target.value; else delete d.folder; saveLib(); itemsheet.close(); renderHome(); toast(e.target.value ? '「' + lib.folders.find(f => f.id === e.target.value).name + '」に移しました' : 'フォルダから出しました'); });
+$('#is-dup').addEventListener('click', async () => { const d = itemDrawing(); const c = L.duplicateDrawing(lib, d); const t = await flat.media.get('thumb:' + d.id).catch(() => null); if (t) await flat.media.put('thumb:' + c.id, t).catch(() => {}); saveLib(); itemsheet.close(); renderHome(); toast('コピーしました：' + c.title); });
 $('#is-export').addEventListener('click', async () => { const d = itemDrawing(); itemsheet.close(); await exportDrawingFile(d); });
-$('#is-trash').addEventListener('click', () => { const d = itemDrawing(); L.trashDrawing(d); if (lib.current && lib.current.drawingId === d.id) lib.current = null; saveLib(); itemsheet.close(); renderHome(); toast('「' + d.title + '」移到回收桶（' + L.TRASH_DAYS + ' 天後自動清掉）', 3000); });
-$('#is-restore').addEventListener('click', () => { const d = itemDrawing(); L.restoreDrawing(d); saveLib(); itemsheet.close(); renderHome(); toast('「' + d.title + '」還原了'); });
+$('#is-trash').addEventListener('click', () => { const d = itemDrawing(); L.trashDrawing(d); if (lib.current && lib.current.drawingId === d.id) lib.current = null; saveLib(); itemsheet.close(); renderHome(); toast('「' + d.title + '」をゴミ箱に移しました（' + L.TRASH_DAYS + ' 日後に自動で消えます）', 3000); });
+$('#is-restore').addEventListener('click', () => { const d = itemDrawing(); L.restoreDrawing(d); saveLib(); itemsheet.close(); renderHome(); toast('「' + d.title + '」を元に戻しました'); });
 $('#is-purge').addEventListener('click', () => {
-  const d = itemDrawing(); if (!confirm('永久刪除「' + d.title + '」？刪了就找不回來。')) return;
+  const d = itemDrawing(); if (!confirm('「' + d.title + '」を完全に削除しますか？削除すると元に戻せません。')) return;
   removeDrawingFiles(d); lib.drawings = lib.drawings.filter(x => x !== d); saveLib(); itemsheet.close(); renderHome();
 });
 // 資料夾：改名、刪除（裡面的頭圖回到「全部」，不會被刪）
 function openFolderSheet(id) {
   const f = lib.folders.find(x => x.id === id); if (!f) return;
-  const n = prompt('資料夾改名（清空＝刪除這個資料夾；裡面的頭圖不會被刪）', f.name); if (n === null) return;
-  if (!n.trim()) { if (confirm('刪除資料夾「' + f.name + '」？裡面的頭圖會回到「全部」。')) { L.deleteFolder(lib, id); home.box = 'all'; saveLib(); renderHome(); } return; }
+  const n = prompt('フォルダ名を変更（空にする＝このフォルダを削除。中のカット図は消えません）', f.name); if (n === null) return;
+  if (!n.trim()) { if (confirm('フォルダ「' + f.name + '」を削除しますか？中のカット図は「すべて」に戻ります。')) { L.deleteFolder(lib, id); home.box = 'all'; saveLib(); renderHome(); } return; }
   try { L.renameFolder(lib, id, n); saveLib(); renderHome(); } catch (e) { toast(e.message); }
 }
 const homesheet = $('#homesheet'), aboutsheet = $('#aboutsheet');
 $('#home-more').addEventListener('click', () => {
   const live = lib.drawings.filter(d => !d.trashedAt).length;
-  $('#home-status').textContent = live + ' 張頭圖・自動存在這個瀏覽器裡（清除瀏覽器資料會不見，記得匯出備份）';
+  $('#home-status').textContent = live + ' 枚のカット図・このブラウザに自動保存（ブラウザのデータを消すと消えるので、書き出してバックアップしてください）';
   homesheet.showModal();
 });
 homesheet.addEventListener('click', e => { if (e.target === homesheet) homesheet.close(); });
@@ -1767,7 +1767,7 @@ $('#hs-import').addEventListener('click', () => { homesheet.close(); $('#file-in
 $('#hs-export').addEventListener('click', async () => {
   homesheet.close();
   const media = await collectMedia(lib.drawings.filter(d => !d.trashedAt));
-  downloadBlob(new Blob([L.exportLibrary(lib, media)], { type: 'application/json' }), '頭圖_全部_' + stamp() + '.json'); toast('已產生全部頭圖的 JSON 下載（含照片）');
+  downloadBlob(new Blob([L.exportLibrary(lib, media)], { type: 'application/json' }), 'カット図_すべて_' + stamp() + '.json'); toast('すべてのカット図の JSON をダウンロードしました（写真を含む）');
 });
 $('#hs-about').addEventListener('click', () => { homesheet.close(); aboutsheet.showModal(); });
 $('#hs-help').addEventListener('click', () => { homesheet.close(); $('#helpsheet').showModal(); });
@@ -1779,8 +1779,8 @@ $('#file-input').addEventListener('change', e => { const f = e.target.files[0]; 
 // 匯出一張頭圖（照片、底圖一起帶）
 async function exportDrawingFile(d) {
   const media = await collectMedia([d]);
-  downloadBlob(new Blob([L.exportDrawing(d, media)], { type: 'application/json' }), '頭圖_' + fileSafe(d.title) + '_' + stamp() + '.json');
-  toast('已產生「' + d.title + '」的 JSON 下載');
+  downloadBlob(new Blob([L.exportDrawing(d, media)], { type: 'application/json' }), 'カット図_' + fileSafe(d.title) + '_' + stamp() + '.json');
+  toast('「' + d.title + '」の JSON をダウンロードしました');
 }
 async function collectMedia(list) {
   const out = {};
@@ -1801,7 +1801,7 @@ async function collectMedia(list) {
   strip.addEventListener('contextmenu', e => e.preventDefault());
   strip.addEventListener('click', e => {
     if (lpFired) { lpFired = false; return; }
-    if (e.target.closest('.add')) { const j = L.addStep(drawing, stepIndex); saveLib(); openStep(j); toast('加了一步：點上面的標題可以幫它取名字', 2600); return; }
+    if (e.target.closest('.add')) { const j = L.addStep(drawing, stepIndex); saveLib(); openStep(j); toast('ステップを追加しました：上のタイトルをタップすると名前を付けられます', 2600); return; }
     const b = e.target.closest('[data-step]'); if (b) openStep(+b.dataset.step);
   });
 }
@@ -1814,7 +1814,7 @@ function openStepSheet() {
   $('#ss-drawing-title').value = drawing.title;
   $('#ss-tag').textContent = L.stepLabel(stepIndex);
   $('#ss-title').value = curStep().title;
-  $('#ss-title').placeholder = '步驟 ' + (stepIndex + 1);
+  $('#ss-title').placeholder = 'ステップ ' + (stepIndex + 1);
   $('#ss-up').disabled = stepIndex <= 0; $('#ss-down').disabled = stepIndex >= drawing.steps.length - 1;
   $('#ss-del').disabled = drawing.steps.length <= 1;
   $('#ss-clear').disabled = !curItems();
@@ -1836,7 +1836,7 @@ async function renderPhotos() {
   $('#ss-photo-add').disabled = ids.length >= L.PHOTO_MAX;
   $('#ss-photo-count').textContent = ids.length + '／' + L.PHOTO_MAX;
   const box = $('#ss-photos');
-  box.innerHTML = ids.map(id => `<button type="button" class="ph" data-photo="${esc(id)}" aria-label="看照片"><img alt="" src="${photoUrls.get(id) || ''}"></button>`).join('');
+  box.innerHTML = ids.map(id => `<button type="button" class="ph" data-photo="${esc(id)}" aria-label="写真を見る"><img alt="" src="${photoUrls.get(id) || ''}"></button>`).join('');
   for (const id of ids) {
     if (photoUrls.has(id)) continue;
     const blob = await flat.media.get(id).catch(() => null); if (!blob) continue;
@@ -1848,9 +1848,9 @@ $('#ss-photo-add').addEventListener('click', () => $('#photo-input').click());
 $('#photo-input').addEventListener('change', async e => {
   const files = [...e.target.files]; e.target.value = '';
   const room = L.PHOTO_MAX - (drawing.photos || []).length;
-  if (files.length > room) toast('一張頭圖最多 ' + L.PHOTO_MAX + ' 張照片，多的沒有加進來');
+  if (files.length > room) toast('1枚のカット図に写真は ' + L.PHOTO_MAX + ' 枚までです。超えた分は追加していません');
   for (const f of files.slice(0, Math.max(0, room))) {
-    try { const id = await flat.media.addImage(f, 1600); drawing.photos = [...(drawing.photos || []), id]; } catch (err) { toast('照片讀不進來：' + err.message); }
+    try { const id = await flat.media.addImage(f, 1600); drawing.photos = [...(drawing.photos || []), id]; } catch (err) { toast('写真が読み込めません：' + err.message); }
   }
   L.touch(drawing); saveLib(); renderPhotos();
 });
@@ -1861,7 +1861,7 @@ function openPhoto(id) { photoId = id; $('#ph-img').src = photoUrls.get(id) || '
 photosheet.addEventListener('click', e => { if (e.target === photosheet || e.target.id === 'ph-img') photosheet.close(); });
 $('#ph-close').addEventListener('click', () => photosheet.close());
 $('#ph-del').addEventListener('click', () => {
-  if (!confirm('把這張照片從頭圖拿掉？')) return;
+  if (!confirm('この写真をカット図から外しますか？')) return;
   drawing.photos = (drawing.photos || []).filter(x => x !== photoId); if (!drawing.photos.length) delete drawing.photos;
   if (!lib.drawings.some(d => (d.photos || []).includes(photoId))) flat.media.del(photoId).catch(() => {});
   L.touch(drawing); saveLib(); photosheet.close(); renderPhotos();
@@ -1883,31 +1883,31 @@ stepsheet.addEventListener('close', () => { clearTimeout(textTimer); saveLib(); 
 $('#ss-close').addEventListener('click', () => stepsheet.close());
 $('#ss-list').addEventListener('click', e => { const b = e.target.closest('[data-goto]'); if (!b) return; stepsheet.close(); openStep(+b.dataset.goto); });
 $('#ss-add').addEventListener('click', () => { const j = L.addStep(drawing, stepIndex); saveLib(); openStep(j); openStepSheet(); });
-$('#ss-dup').addEventListener('click', () => { const j = L.duplicateStep(drawing, stepIndex); saveLib(); openStep(j); openStepSheet(); toast('複製好了（含這一步的圖）'); });
+$('#ss-dup').addEventListener('click', () => { const j = L.duplicateStep(drawing, stepIndex); saveLib(); openStep(j); openStepSheet(); toast('コピーしました（このステップの図を含む）'); });
 $('#ss-up').addEventListener('click', () => { const j = L.moveStep(drawing, stepIndex, -1); saveLib(); openStep(j, { keepView: true }); openStepSheet(); });
 $('#ss-down').addEventListener('click', () => { const j = L.moveStep(drawing, stepIndex, 1); saveLib(); openStep(j, { keepView: true }); openStepSheet(); });
 $('#ss-del').addEventListener('click', () => {
-  if (!confirm('刪除「' + L.stepLabel(stepIndex) + ' ' + L.stepName(drawing, stepIndex) + '」這一步？這一步的圖會一起刪掉（不能復原）')) return;
+  if (!confirm('「' + L.stepLabel(stepIndex) + ' ' + L.stepName(drawing, stepIndex) + '」のステップを削除しますか？このステップの図も一緒に消えます（元に戻せません）')) return;
   const j = L.deleteStep(drawing, stepIndex); saveLib(); stepsheet.close(); openStep(j);
 });
 $('#ss-clear').addEventListener('click', () => {
-  if (!curItems() || !confirm('把這一步的圖清掉？（可以按復原）')) return;
+  if (!curItems() || !confirm('このステップの図を消しますか？（元に戻すで戻せます）')) return;
   if (L.is2d(drawing)) { flat.clearStep(); stepsheet.close(); return; }
   pushHistory(); doc.layers = []; select(null); rebuild(); commit(); stepsheet.close();
 });
 const fileSafe = s => s.replace(/[\\/:*?"<>|\s]+/g, '_');
-const pngName = () => '頭圖3D_' + fileSafe(drawing.title) + '_' + L.stepLabel(stepIndex) + '_' + stamp() + '.png';
-$('#ss-png').addEventListener('click', async () => { stepsheet.close(); downloadBlob(await pngBlob(), pngName()); toast('已產生 PNG 下載（2000×2000 透明，不含點位名稱）'); });
-$('#ss-share-png').addEventListener('click', async () => { stepsheet.close(); shareBlob(await pngBlob(), pngName(), '頭圖 3D'); });
+const pngName = () => 'カット図3D_' + fileSafe(drawing.title) + '_' + L.stepLabel(stepIndex) + '_' + stamp() + '.png';
+$('#ss-png').addEventListener('click', async () => { stepsheet.close(); downloadBlob(await pngBlob(), pngName()); toast('PNG をダウンロードしました（2000×2000・背景透明・ポイント名なし）'); });
+$('#ss-share-png').addEventListener('click', async () => { stepsheet.close(); shareBlob(await pngBlob(), pngName(), 'カット図 3D'); });
 $('#ss-export').addEventListener('click', async () => { stepsheet.close(); await exportDrawingFile(drawing); });
 // 2D 的輸出：這個視圖、五視圖總表、PDF、動畫影片、社群輪播圖
 stepsheet.querySelectorAll('[data-out]').forEach(b => b.addEventListener('click', () => { stepsheet.close(); flat.output(b.dataset.out); }));
 $('#ss-dup-drawing').addEventListener('click', async () => {
   const c = L.duplicateDrawing(lib, drawing); saveLib(); stepsheet.close();
-  toast('複製好了，現在打開的是「' + c.title + '」'); await openDrawing(c.id, stepIndex, 'draw');
+  toast('コピーしました。いま開いているのは「' + c.title + '」'); await openDrawing(c.id, stepIndex, 'draw');
 });
 $('#ss-del-drawing').addEventListener('click', () => {
-  if (!confirm('把「' + drawing.title + '」移到回收桶？（' + L.TRASH_DAYS + ' 天內可以在首頁的回收桶還原）')) return;
+  if (!confirm('「' + drawing.title + '」をゴミ箱に移しますか？（' + L.TRASH_DAYS + ' 日以内ならホームのゴミ箱から戻せます）')) return;
   L.trashDrawing(drawing); lib.current = null; saveLib(); stepsheet.close(); setMode('home'); drawing = null;
 });
 
@@ -1942,7 +1942,7 @@ document.addEventListener('pointerdown', e => {
 const vgrid = $('#vgrid');
 for (const key of ['front_left_45', 'front', 'front_right_45', 'left', 'top', 'right', 'back_left_45', 'back', 'back_right_45']) {
   const v = VIEWS.find(x => x.key === key);
-  const b = document.createElement('button'); b.type = 'button'; b.dataset.view = v.key; b.textContent = v.label; b.setAttribute('aria-label', '視角：' + v.label);
+  const b = document.createElement('button'); b.type = 'button'; b.dataset.view = v.key; b.textContent = v.label; b.setAttribute('aria-label', '視点：' + v.label);
   b.addEventListener('click', () => { setView(v, true); closePops(); });
   vgrid.append(b);
 }
@@ -1951,7 +1951,7 @@ document.querySelectorAll('[data-lshape]').forEach(b => b.addEventListener('clic
 // 分線形狀：換樞軸（再按一次＝回頭頂）、平行重複的小選單
 $('#pivot-btn').addEventListener('click', () => {
   cancelDraft();
-  if (pickingPivot) { pickingPivot = false; radPivot = null; toast('樞軸回到頭頂', 1500); } else pickingPivot = true;
+  if (pickingPivot) { pickingPivot = false; radPivot = null; toast('中心点を頭頂に戻しました', 1500); } else pickingPivot = true;
   syncUI(); updateHandles(); requestRender();
 });
 $('#sel-repeat').addEventListener('click', repeatClick);
@@ -1997,7 +1997,7 @@ $('#tgl-structure').addEventListener('click', () => { setFlag('structure', !lib.
 $('#struct-btn').addEventListener('click', () => { setFlag('structure', !lib.settings.structure); updateHandles(); });
 $('#tgl-labels').addEventListener('click', () => { setFlag('labels', !lib.settings.labels); updateHandles(); });
 $('#tgl-ghost').addEventListener('click', () => { setFlag('ghost', !lib.settings.ghost); buildGhosts(); });
-$('#tgl-mirror').addEventListener('click', () => { lib.settings.mirror = !lib.settings.mirror; saveLib(); syncUI(); toast(lib.settings.mirror ? '鏡像開：畫左邊會自動畫右邊' : '鏡像關', 1500); });
+$('#tgl-mirror').addEventListener('click', () => { lib.settings.mirror = !lib.settings.mirror; saveLib(); syncUI(); toast(lib.settings.mirror ? 'ミラーオン：左側に描くと右側にも自動で描きます' : 'ミラーオフ', 1500); });
 $('#tgl-snap').addEventListener('click', () => { setFlag('snap', !lib.settings.snap); clearSnap(); updateHandles(); });
 document.querySelectorAll('[data-dash]').forEach(b => b.addEventListener('click', () => applyStyle({ dashed: b.dataset.dash === '1' })));
 document.querySelectorAll('[data-width]').forEach(b => b.addEventListener('click', () => applyStyle({ width: +b.dataset.width })));
@@ -2030,7 +2030,7 @@ async function photoNow() {
   const png = await pngBlob(2000, true);
   const img = await createImageBitmap(png), c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
   const ctx = c.getContext('2d'); ctx.fillStyle = getComputedStyle(stage).backgroundColor || '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0); // 透明底鋪上畫面的底色，存到相簿才不會是黑底
-  return { blob: await new Promise((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('圖產生不出來'))), 'image/png')), name: pngName() };
+  return { blob: await new Promise((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('画像を作れません'))), 'image/png')), name: pngName() };
 }
 $('#preview-save').addEventListener('click', async e => {
   if (!drawing) return;
@@ -2042,16 +2042,16 @@ $('#preview-save').addEventListener('click', async e => {
     saveUrl = URL.createObjectURL(blob); $('#sv-img').src = saveUrl;
     const share = coarse && !!navigator.share && !!navigator.canShare && navigator.canShare({ files: [saveFile] });
     $('#sv-share').hidden = !share;
-    $('#sv-tip').textContent = coarse ? (share ? 'iPhone：按上面的按鈕，再選「儲存影像」。' : '') + '也可以長按圖片存到相簿。' : name;
+    $('#sv-tip').textContent = coarse ? (share ? 'iPhone：上のボタンを押して「画像を保存」を選んでください。' : '') + '画像を長押しして写真アプリに保存することもできます。' : name;
     savesheet.showModal();
-  } catch (err) { toast('照片產生不出來：' + (err && err.message || err), 4000); }
+  } catch (err) { toast('画像を作れません：' + (err && err.message || err), 4000); }
   finally { btn.disabled = false; }
 });
 $('#sv-share').addEventListener('click', async () => {
   try { await navigator.share({ files: [saveFile], title: drawing.title }); savesheet.close(); }
-  catch (e) { if (e && e.name !== 'AbortError') toast('分享失敗：' + e.message + '（可以改按下載）', 3500); }
+  catch (e) { if (e && e.name !== 'AbortError') toast('共有できませんでした：' + e.message + '（ダウンロードを使ってください）', 3500); }
 });
-$('#sv-download').addEventListener('click', () => { downloadBlob(saveFile, saveFile.name); savesheet.close(); toast('已產生 PNG 下載'); });
+$('#sv-download').addEventListener('click', () => { downloadBlob(saveFile, saveFile.name); savesheet.close(); toast('PNG をダウンロードしました'); });
 $('#sv-close').addEventListener('click', () => savesheet.close());
 savesheet.addEventListener('click', e => { if (e.target === savesheet) savesheet.close(); });
 $('#recenter').addEventListener('click', () => { applyStepView(); if (fallen) ensureVisible(fallTips(), 0.92); });
@@ -2098,12 +2098,12 @@ function loadFailed(msg) { loadingBox.hidden = false; loadingBox.classList.add('
 async function prepareHead(id) {
   if (heads.has(id)) return heads.get(id);
   const model = H.modelById(headList, id);
-  if (!model) throw new Error('沒有這顆頭模：' + id);
+  if (!model) throw new Error('このヘッドはありません：' + id);
   const [res, metaRes] = await Promise.all([fetch(H.HEADS_DIR + model.glb), fetch(H.HEADS_DIR + model.meta)]);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const meshes = loadMeshes(await res.arrayBuffer());
   const meta = metaRes.ok ? await metaRes.json() : null;
-  if (!(meta && meta.outline && meta.landmarks_m)) throw new Error('點位與外輪廓的資料讀不到'); // 沒有外輪廓就沒有可以畫的範圍
+  if (!(meta && meta.outline && meta.landmarks_m)) throw new Error('ポイントと外周ラインのデータが読めません'); // 沒有外輪廓就沒有可以畫的範圍
   const group = new THREE.Group();
   for (const [name, data] of Object.entries(meshes)) { const m = new THREE.Mesh(geometryFrom(data), new THREE.MeshStandardMaterial(headMaterialOptions(name))); m.name = name; group.add(m); }
   const sc = new Scalp(meshes);
@@ -2134,7 +2134,7 @@ function applyHead(h) {
 async function useHead(id) {
   if (id === headId) return heads.get(id);
   const cached = heads.has(id);
-  if (!cached) showLoading('載入' + H.headLabel(H.modelById(headList, id)) + '…');
+  if (!cached) showLoading(H.headLabel(H.modelById(headList, id)) + 'を読み込み中…');
   try { const h = await prepareHead(id); applyHead(h); return h; }
   finally { if (!cached) loadingBox.hidden = true; }
 }
@@ -2147,15 +2147,15 @@ const projectOnScalp = p => { const q = scalp.nearest(p).point; return { x: q.x,
   setView(VIEWS[1]); resize();
   try {
     const [lr, tr] = await Promise.all([fetch(H.HEADS_URL), fetch(H.TRANSFER_URL)]);
-    if (!lr.ok) throw new Error('頭模清單 HTTP ' + lr.status);
+    if (!lr.ok) throw new Error('ヘッド一覧 HTTP ' + lr.status);
     headList = await lr.json();
     const bad = H.validateHeads(headList); if (bad.length) throw new Error(bad[0]);
-    if (tr.ok) { try { transferCtx = TR.makeContext(await tr.json()); } catch (e) { console.warn('換頭模的對照資料讀不進來', e); } }
-  } catch (e) { loadFailed('頭模清單讀不到：' + e.message); return; }
-  try { loadLibrary(); } catch (e) { loadFailed('頭圖庫讀不進來：' + e.message); return; }
+    if (tr.ok) { try { transferCtx = TR.makeContext(await tr.json()); } catch (e) { console.warn('ヘッドを切り替えるための対応データが読み込めません', e); } }
+  } catch (e) { loadFailed('ヘッド一覧が読めません：' + e.message); return; }
+  try { loadLibrary(); } catch (e) { loadFailed('カット図ライブラリが読み込めません：' + e.message); return; }
   const last = lib.current, lastDrawing = last && L.drawingById(lib, last.drawingId);
   try { await useHead(lastDrawing && ['draw', 'preview'].includes(last.mode) ? H.headOf(headList, lastDrawing) : headList.default); }
-  catch (e) { loadFailed('頭模載入失敗：' + e.message); return; }
+  catch (e) { loadFailed('ヘッドを読み込めませんでした：' + e.message); return; }
   loadingBox.hidden = true;
   setTool(tool); applySettings(); purgeTrash();
   // 上次停在畫圖或預覽，就回到那張頭圖的那一步；否則到首頁

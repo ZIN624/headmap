@@ -5,11 +5,11 @@
 
 export const PAGE = { w: 360, h: 468 }; // 一張紙 360×468 mm（直式，3:3.9）
 export const VIEWS = [
-  { id: 'left', label: '左側', short: '左', mirror: 'right', dir: [1, 0, 0], up: [0, 1, 0], cy: 40 },
-  { id: 'right', label: '右側', short: '右', mirror: 'left', dir: [-1, 0, 0], up: [0, 1, 0], cy: 40 },
-  { id: 'top', label: '頂視', short: '頂', mirror: 'top', dir: [0, 1, 0], up: [0, 0, 1], cy: 0 },
-  { id: 'front', label: '正面', short: '正', mirror: 'front', dir: [0, 0, 1], up: [0, 1, 0], cy: 40 },
-  { id: 'back', label: '背面', short: '背', mirror: 'back', dir: [0, 0, -1], up: [0, 1, 0], cy: 40 },
+  { id: 'left', label: '左側面', short: '左', mirror: 'right', dir: [1, 0, 0], up: [0, 1, 0], cy: 40 },
+  { id: 'right', label: '右側面', short: '右', mirror: 'left', dir: [-1, 0, 0], up: [0, 1, 0], cy: 40 },
+  { id: 'top', label: '上から', short: '上', mirror: 'top', dir: [0, 1, 0], up: [0, 0, 1], cy: 0 },
+  { id: 'front', label: '正面', short: '前', mirror: 'front', dir: [0, 0, 1], up: [0, 1, 0], cy: 40 },
+  { id: 'back', label: '背面', short: '後', mirror: 'back', dir: [0, 0, -1], up: [0, 1, 0], cy: 40 },
 ];
 export const VIEW_IDS = VIEWS.map(v => v.id);
 export const viewById = id => VIEWS.find(v => v.id === id) || null;
@@ -32,7 +32,7 @@ export function project(id, p) {
     case 'left': return [-z, -y];  // 從模型左側看：臉（+Z）在左邊
     case 'right': return [z, -y];
     case 'top': return [-x, -z];   // 從頭頂看、臉朝上：模型右側在畫面右邊
-    default: throw new Error('視圖不認得：' + id);
+    default: throw new Error('不明なビュー：' + id);
   }
 }
 // 2D 點 → 這個視圖平面上的 3D 點（深度＝depth 公尺，沿視線方向量；預設 0＝過頭心的那一片）
@@ -44,6 +44,6 @@ export function unproject(id, q, depth = 0) {
     case 'left': return [depth, -w, -u];
     case 'right': return [-depth, -w, u];
     case 'top': return [-u, depth, -w];
-    default: throw new Error('視圖不認得：' + id);
+    default: throw new Error('不明なビュー：' + id);
   }
 }

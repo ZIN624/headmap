@@ -17,18 +17,18 @@ const V = a => new Vector3(a[0], a[1], a[2]);
 const sidePoint = (a, side) => new Vector3(side === 'L' ? a[0] : -a[0], a[1], a[2]);
 const specFor = (s, side) => (side === 'R' && s.right ? s.right : s); // 這一側用哪一份節點
 function outlineSpec(scalp) {
-  if (!scalp.outlineSpec) throw new Error('外輪廓資料還沒載入：先呼叫 computeLandmarks(scalp, meta)，頭的資料檔要有 outline');
+  if (!scalp.outlineSpec) throw new Error('外周ラインのデータが未読み込みです：先に computeLandmarks(scalp, meta) を呼んでください。頭のデータには outline が必要です');
   return scalp.outlineSpec;
 }
 
 // 側面六點（左右各一）。knot＝取 outline 的節點（哪一段、哪個序號），ear＝耳側三點（earPoints）。
 const SIDE_RULES = [
-  { id: 'F.S.P', name: '前側點（額角）', knot: ['front', 'fsp'] },
-  { id: 'S.P', name: '側點（太陽穴）', knot: ['front', 'sp'] },
-  { id: 'S.C.P', name: '側角點（鬢角尖）', ear: 'scp' },
-  { id: 'E.P', name: '耳點（耳根最高點）', ear: 'ep' },
-  { id: 'E.B.P', name: '耳後點', ear: 'ebp' },
-  { id: 'N.S.P', name: '頸側點', knot: ['rear', 'nsp'] },
+  { id: 'F.S.P', name: 'フロントサイドポイント（額の角）', knot: ['front', 'fsp'] },
+  { id: 'S.P', name: 'サイドポイント（こめかみ）', knot: ['front', 'sp'] },
+  { id: 'S.C.P', name: 'サイドコーナーポイント（もみあげの先）', ear: 'scp' },
+  { id: 'E.P', name: 'イヤーポイント（耳の付け根の一番上）', ear: 'ep' },
+  { id: 'E.B.P', name: 'イヤーバックポイント', ear: 'ebp' },
+  { id: 'N.S.P', name: 'ネープサイドポイント', knot: ['rear', 'nsp'] },
 ];
 
 const toSkull = (scalp, p) => scalp._skullNearest(p);
@@ -66,8 +66,8 @@ function scanBackMidline(scalp) {
 //   ＊.M.P        相鄰兩個中線點的仰角中點
 //   側面六點      見 SIDE_RULES
 export function computeLandmarks(scalp, meta) {
-  if (!meta.outline) throw new Error('頭的資料檔缺 outline（外輪廓節點）');
-  if (!meta.landmarks_m || !meta.landmarks_m.top) throw new Error('頭的資料檔缺 landmarks_m.top（頭頂）');
+  if (!meta.outline) throw new Error('頭のデータに outline（外周ラインの節点）がありません');
+  if (!meta.landmarks_m || !meta.landmarks_m.top) throw new Error('頭のデータに landmarks_m.top（頭頂）がありません');
   const s = meta.outline;
   scalp.outlineSpec = s;
   if (!!scalp.asymmetric !== !!s.right) { scalp.asymmetric = !!s.right; scalp._earLoops = null; } // 右耳根要不要自己算（Scalp.earRootLoop）
@@ -80,15 +80,15 @@ export function computeLandmarks(scalp, meta) {
   const topAe = dirToAzEl(top.clone().sub(scalp.center));
   const { bp, gp } = scanBackMidline(scalp);
   const mid = (a, b) => (a + b) / 2;
-  push('C.P', '前中點（前額髮際中心）', '', cp);
-  push('C.T.M.P', '前中點與頂點的中點', '', onHead(scalp, 0, mid(cpEl, topAe.el)));
-  push('T.P', '頂點（頭頂）', '', top);
-  push('T.G.M.P', '頂點與黃金點的中點', '', onHead(scalp, 180, mid(topAe.el, gp.el)));
-  push('G.P', '黃金點', '', gp.point);
-  push('G.B.M.P', '黃金點與枕骨點的中點', '', onHead(scalp, 180, mid(gp.el, bp.el)));
-  push('B.P', '枕骨點', '', bp.point);
-  push('B.N.M.P', '枕骨點與頸背點的中點', '', onHead(scalp, 180, mid(bp.el, npEl)));
-  push('N.P', '頸背點（髮際線後中心）', '', np);
+  push('C.P', 'センターポイント（前髪の生え際の中心）', '', cp);
+  push('C.T.M.P', 'センタートップ・ミドルポイント', '', onHead(scalp, 0, mid(cpEl, topAe.el)));
+  push('T.P', 'トップポイント（頭頂）', '', top);
+  push('T.G.M.P', 'トップゴールデン・ミドルポイント', '', onHead(scalp, 180, mid(topAe.el, gp.el)));
+  push('G.P', 'ゴールデンポイント', '', gp.point);
+  push('G.B.M.P', 'ゴールデンバック・ミドルポイント', '', onHead(scalp, 180, mid(gp.el, bp.el)));
+  push('B.P', 'バックポイント', '', bp.point);
+  push('B.N.M.P', 'バックネープ・ミドルポイント', '', onHead(scalp, 180, mid(bp.el, npEl)));
+  push('N.P', 'ネープポイント（襟足の生え際の中心）', '', np);
   const earL = earPoints(scalp, s, 'L'), earR = earPoints(scalp, s, 'R');
   for (const r of SIDE_RULES) {
     if (r.ear) { push(r.id, r.name, 'L', earL[r.ear]); push(r.id, r.name, 'R', earR[r.ear]); continue; }
@@ -107,7 +107,7 @@ export const findLandmark = (lms, id, side = '') => lms.find(l => l.id === id &&
 // 每 spacing（1 mm）等弧長取樣、投到去掉耳朵的頭殼；沿法線抬高 OFFSET 後細分到 ≤0.75 mm，在細線上做小幅圓順（鬢角尖固定）。
 // 回傳的點列從 C.P 開始往左側走（C.P → 左鬢角 → 左耳 → N.P → 右耳 → 右鬢角 → 回到 C.P 前一點），閉合。
 export function outlinePoints(scalp, lms, spacing = 0.001) {
-  if (!Array.isArray(lms)) throw new Error('外輪廓要先有 computeLandmarks 算出來的點位');
+  if (!Array.isArray(lms)) throw new Error('外周ラインには、先に computeLandmarks で求めたポイントが必要です');
   const s0 = outlineSpec(scalp);
   const g = (id, side = '') => findLandmark(lms, id, side).point;
   const halfKnots = side => {

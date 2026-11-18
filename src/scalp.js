@@ -33,9 +33,9 @@ export class Scalp {
   // meshes：loadMeshes() 的結果。要有 HD_HEAD_BASE（整顆頭，帶耳殼遮罩 ear）與 HD_BUST（胸像）；HD_EYES 有的話只當阻擋物。
   constructor(meshes, center = [0, 0, 0]) {
     const headData = meshes.HD_HEAD_BASE, bustData = meshes.HD_BUST;
-    if (!headData) throw new Error('GLB 裡沒有 HD_HEAD_BASE');
-    if (!headData.ear) throw new Error('HD_HEAD_BASE 要帶耳殼遮罩（ear_bits）');
-    if (!bustData) throw new Error('GLB 裡沒有 HD_BUST');
+    if (!headData) throw new Error('GLB に HD_HEAD_BASE がありません');
+    if (!headData.ear) throw new Error('HD_HEAD_BASE には耳のマスク（ear_bits）が必要です');
+    if (!bustData) throw new Error('GLB に HD_BUST がありません');
     const mat = new MeshBasicMaterial({ side: DoubleSide });
     this._ear = headData.ear; // 每個頭頂點是不是耳殼（0／1）
     // 「頭」＝整顆頭（含臉、耳朵）。建 BVH 會把索引重排，所以用副本：沒重排的順序留給身體網格（_ensureBody）。
@@ -80,7 +80,7 @@ export class Scalp {
   // 整張面是同一張連通的網格，pick、最近點、切面最短線、曲線和填色才會一起涵蓋鬢角及頸背；
   // 不疊兩張網格，以免切面線在接縫斷掉。
   extendDrawingSurface(outline, margin = 0.01) {
-    if (!outline || outline.length < 3) throw new Error('設定可畫範圍需要閉合的外輪廓');
+    if (!outline || outline.length < 3) throw new Error('描ける範囲を決めるには、閉じた外周ラインが必要です');
     const loop = rdp(outline.concat([outline[0]]), 0.0005); loop.pop();
     const dirs = loop.map(p => p.clone().sub(this.center).normalize());
     this._drawingEarLoops = { L: this.earRootLoop('L'), R: this.earRootLoop('R') };
@@ -154,7 +154,7 @@ export class Scalp {
   nearest(position) {
     const q = toV(position); // 吃 Vector3、[x,y,z] 或 {x,y,z}（存檔裡的 bends 是物件）
     const r = this._bvh.closestPointToPoint(q, this._hit);
-    if (!r) throw new Error('找不到頭皮表面。');
+    if (!r) throw new Error('頭皮の面が見つかりません。');
     const point = r.point.clone();
     return { point, normal: this._smoothNormal(r.faceIndex, point), distance: r.distance, faceIndex: r.faceIndex };
   }
@@ -163,7 +163,7 @@ export class Scalp {
   nearestHead(position) {
     const q = toV(position);
     const r = this.headGeometry.boundsTree.closestPointToPoint(q, {});
-    if (!r) throw new Error('找不到頭表面。');
+    if (!r) throw new Error('頭の面が見つかりません。');
     const point = r.point.clone();
     const ia = this.headGeometry.index.getX(r.faceIndex * 3), ib = this.headGeometry.index.getX(r.faceIndex * 3 + 1), ic = this.headGeometry.index.getX(r.faceIndex * 3 + 2);
     const pos = this.headGeometry.attributes.position, nrm = this.headGeometry.attributes.normal;
@@ -198,7 +198,7 @@ export class Scalp {
   // 髮束（lift.js 的 hairPath）用這個，脖子、肩膀也擋得住。頂點法線照 GLB（朝外）。
   nearestBody(position) {
     const g = this._ensureBody(), q = toV(position), r = g.boundsTree.closestPointToPoint(q, {});
-    if (!r) throw new Error('找不到身體表面。');
+    if (!r) throw new Error('体の面が見つかりません。');
     const point = r.point.clone(), ia = g.index.getX(r.faceIndex * 3), ib = g.index.getX(r.faceIndex * 3 + 1), ic = g.index.getX(r.faceIndex * 3 + 2);
     _a.fromBufferAttribute(g.attributes.position, ia); _b.fromBufferAttribute(g.attributes.position, ib); _c.fromBufferAttribute(g.attributes.position, ic);
     _tri.set(_a, _b, _c).getBarycoord(point, _bary);
@@ -272,7 +272,7 @@ export class Scalp {
       for (;;) { const nxt = adj.get(cur).find(x => x !== prev && !seen.has(x)); if (nxt === undefined) break; loop.push(nxt); seen.add(nxt); prev = cur; cur = nxt; }
       if (loop.length > 2 && adj.get(cur).includes(start) && (!best || loop.length > best.length)) best = loop;
     }
-    if (!best) throw new Error('找不到耳根迴圈');
+    if (!best) throw new Error('耳の付け根の輪が見つかりません');
     const raw = best.map(i => new Vector3().fromBufferAttribute(pos, i));
     // 側視圖凸包（Andrew 單調鏈，座標 (z, y)）
     const sorted = raw.slice().sort((a, b) => a.z - b.z || a.y - b.y);
@@ -339,7 +339,7 @@ export class Scalp {
   // 折線：控制點先投到頭皮最近點，兩點之間按「從頭心出發的方向」插值，每一小段射回頭皮。
   path(controls, closed = false) {
     let pts = controls.map(c => this.nearest(c).point);
-    if (pts.length < 2) throw new Error('至少需要兩個不同的點。');
+    if (pts.length < 2) throw new Error('違う点が2つ以上必要です。');
     if (closed) pts = pts.concat([pts[0]]);
     const result = [];
     for (let i = 0; i + 1 < pts.length; i++) {
@@ -355,14 +355,14 @@ export class Scalp {
       }
     }
     result.push(this._lift(this.nearest(pts[pts.length - 1])));
-    if (result.length < 2) throw new Error('兩點太接近，請重新點選。');
+    if (result.length < 2) throw new Error('2点が近すぎます。もう一度選んでください。');
     return result;
   }
 
   // 曲線：通過每個控制點的 Catmull-Rom（向心式），取樣後每一點射回頭皮。closed＝閉合（區塊邊）。
   curve(controls, closed = false) {
     const pts = controls.map(c => this.nearest(c).point);
-    if (pts.length < 2) throw new Error('至少需要兩個不同的點。');
+    if (pts.length < 2) throw new Error('違う点が2つ以上必要です。');
     if (pts.length === 2 && !closed) return this.path(pts);
     const crv = new CatmullRomCurve3(pts, closed, 'centripetal', 0.5);
     const approx = crv.getLength();
@@ -374,7 +374,7 @@ export class Scalp {
       result.push(this._lift(this._onSurface(p)));
     }
     if (!closed) result[result.length - 1] = this._lift(this.nearest(pts[pts.length - 1]));
-    if (result.length < 2) throw new Error('兩點太接近，請重新點選。');
+    if (result.length < 2) throw new Error('2点が近すぎます。もう一度選んでください。');
     return result;
   }
 
@@ -437,7 +437,7 @@ export class Scalp {
   // 折線圍成的一圈（點一下填色做出來的面）：相鄰兩點之間走直線、每 1 mm 貼回頭皮一次；不做平滑，轉角保持尖的。回傳抬高 OFFSET 的密集點（不重複第一點）。
   polyLoop(controls) {
     const pts = controls.map(c => this.nearest(c).point), out = [];
-    if (pts.length < 3) throw new Error('至少需要三個點。');
+    if (pts.length < 3) throw new Error('点が3つ以上必要です。');
     for (let i = 0; i < pts.length; i++) {
       const a = pts[i], b = pts[(i + 1) % pts.length], n = Math.max(1, Math.ceil(a.distanceTo(b) / STEP));
       for (let k = 0; k < n; k++) out.push(this._lift(this.nearest(k ? a.clone().lerp(b, k / n) : a)));
@@ -644,7 +644,7 @@ export class Scalp {
   // 用 CatmullRom 而不是分段貝茲，是因為多點曲線就是靠通過點定形狀，加一個通過點最簡單也最平滑。
   curveWithBends(controls, bends = [], closed = false) {
     const pts = controls.map(c => this.nearest(c).point);
-    if (pts.length < 2) throw new Error('至少需要兩個不同的點。');
+    if (pts.length < 2) throw new Error('違う点が2つ以上必要です。');
     if (pts.length === 2 && !closed) return bends[0] ? this.bent(pts[0], pts[1], controlFromHandle(pts[0], pts[1], this.nearest(bends[0]).point)) : this.geodesic(pts[0], pts[1]);
     const through = [];
     const segs = closed ? pts.length : pts.length - 1;

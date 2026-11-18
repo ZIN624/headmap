@@ -13,12 +13,12 @@ import { azElToDir, mirrorX, toV } from './geometry.js';
 import { findLandmark } from './landmarks.js';
 import * as SEC from './section.js';
 
-export const TEMPLATE_LABELS = { center: '正中線', ear: '耳到耳', four: '四區', uzone: 'U型區', fringe: '瀏海三角' };
+export const TEMPLATE_LABELS = { center: '正中線', ear: 'イヤーツーイヤー', four: '4ブロック', uzone: 'Uセクション', fringe: '前髪トライアングル' };
 const SAME_TOL = 0.0015; // 兩條線的每個點都差不到 1.5 mm＝同一條（按第二次不重畫）
 
 function landmark(scalp, lms, id, side = '') {
   const l = findLandmark(lms, id, side);
-  if (!l) throw new Error('頭模沒有點位 ' + id + (side ? '（' + side + '）' : ''));
+  if (!l) throw new Error('ヘッドにポイントがありません ' + id + (side ? '（' + side + '）' : ''));
   return scalp.nearest(l.point).point;
 }
 // 正中線上的點：x 歸零再貼回頭皮
@@ -32,7 +32,7 @@ function sectionLine(scalp, section, a, b, inside, name) {
   const sec = SEC.normalizeSection(section), dense = SEC.sectionDense(scalp, sec, a, b);
   if (dense && allInside(dense, inside)) return { shape: 'line', points: [a.clone(), b.clone()], section: sec };
   const f = SEC.fitSection(scalp, sec, a, b, inside);
-  if (!f) throw new Error(name + '在這顆頭上畫不出來');
+  if (!f) throw new Error(name + 'はこのヘッドには描けません');
   return { shape: 'line', points: [f.a.clone(), f.b.clone()], section: sec };
 }
 // 一般的兩點線（沿頭皮最短的路）：走到外輪廓外面就把終點退到最後一個還在裡面的地方
@@ -40,7 +40,7 @@ function plainLine(scalp, a, b, inside, name) {
   const dense = scalp.line(a, b);
   if (allInside(dense, inside)) return { shape: 'line', points: [a.clone(), b.clone()] };
   let i = 0; while (i < dense.length && inside(dense[i])) i++;
-  if (i < 2) throw new Error(name + '在這顆頭上畫不出來');
+  if (i < 2) throw new Error(name + 'はこのヘッドには描けません');
   return { shape: 'line', points: [a.clone(), scalp.nearest(dense[i - 1]).point] };
 }
 
@@ -50,26 +50,26 @@ function center(scalp, lms, inside) {
 }
 function ear(scalp, lms, inside) {
   const top = onMid(scalp, landmark(scalp, lms, 'T.P')), epL = landmark(scalp, lms, 'E.P', 'L');
-  const L = sectionLine(scalp, { kind: 'R', pivot: 0 }, top, epL, inside, '耳到耳（左）');
-  const R = sectionLine(scalp, { kind: 'R', pivot: 0 }, top, mirrorPt(scalp, L.points[1]), inside, '耳到耳（右）');
-  return [{ id: 'ear_l', name: '耳到耳（左）', pair: 'ear_r', ...L }, { id: 'ear_r', name: '耳到耳（右）', pair: 'ear_l', ...R }];
+  const L = sectionLine(scalp, { kind: 'R', pivot: 0 }, top, epL, inside, 'イヤーツーイヤー（左）');
+  const R = sectionLine(scalp, { kind: 'R', pivot: 0 }, top, mirrorPt(scalp, L.points[1]), inside, 'イヤーツーイヤー（右）');
+  return [{ id: 'ear_l', name: 'イヤーツーイヤー（左）', pair: 'ear_r', ...L }, { id: 'ear_r', name: 'イヤーツーイヤー（右）', pair: 'ear_l', ...R }];
 }
 // U型區經過的七個點（左額角 → 左側 → 左後 → G.P → 右後 → 右側 → 右額角）。頭側兩點的高度照 G.P 的仰角，和 landmarks.js 的 gp_line 一樣。
 function uzonePoints(scalp, lms) {
   const gp = findLandmark(lms, 'G.P');
-  if (!gp) throw new Error('頭模沒有點位 G.P');
+  if (!gp) throw new Error('ヘッドにポイント G.P がありません');
   const onHead = (az, el) => scalp.nearest(scalp.onSkull(scalp.center.clone().addScaledVector(azElToDir(az, el), 0.2)).point).point;
   const fl = landmark(scalp, lms, 'F.S.P', 'L'), side = onHead(90, gp.el - 2), back = onHead(135, gp.el), mid = onMid(scalp, gp.point);
   return [fl, side, back, mid, mirrorPt(scalp, back), mirrorPt(scalp, side), mirrorPt(scalp, fl)];
 }
 function uzone(scalp, lms) {
-  return [{ id: 'uzone', name: 'U型區', shape: 'curve', points: uzonePoints(scalp, lms) }];
+  return [{ id: 'uzone', name: 'Uセクション', shape: 'curve', points: uzonePoints(scalp, lms) }];
 }
 function fringe(scalp, lms, inside) {
   const apex = onMid(scalp, landmark(scalp, lms, 'C.T.M.P')), fl = landmark(scalp, lms, 'F.S.P', 'L');
-  const L = plainLine(scalp, apex, fl, inside, '瀏海三角（左）');
-  const R = plainLine(scalp, apex, mirrorPt(scalp, L.points[1]), inside, '瀏海三角（右）');
-  return [{ id: 'fringe_l', name: '瀏海三角（左）', pair: 'fringe_r', ...L }, { id: 'fringe_r', name: '瀏海三角（右）', pair: 'fringe_l', ...R }];
+  const L = plainLine(scalp, apex, fl, inside, '前髪トライアングル（左）');
+  const R = plainLine(scalp, apex, mirrorPt(scalp, L.points[1]), inside, '前髪トライアングル（右）');
+  return [{ id: 'fringe_l', name: '前髪トライアングル（左）', pair: 'fringe_r', ...L }, { id: 'fringe_r', name: '前髪トライアングル（右）', pair: 'fringe_l', ...R }];
 }
 
 // 一個樣板要畫的線：[{ id, name, shape:'line'|'curve', points:[Vector3（頭皮上、沒抬高）], section?, pair? }]。
@@ -81,7 +81,7 @@ export function templateLines(scalp, lms, key, inside = null) {
   if (key === 'four') return [...center(scalp, lms, inside), ...ear(scalp, lms, inside)];
   if (key === 'uzone') return uzone(scalp, lms);
   if (key === 'fringe') return fringe(scalp, lms, inside);
-  throw new Error('樣板不認得：' + key);
+  throw new Error('不明なテンプレート：' + key);
 }
 
 // 這一頁的某一筆（layer：doc.js 的格式）是不是就是樣板的這一條：同樣是兩點線（沒拉彎）或同樣是曲線、點數一樣、

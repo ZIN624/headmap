@@ -20,20 +20,20 @@ import { fitWarp } from '../transfer.js';
 
 const UI_KEY = 'head3d.flat';
 const SEL = '#CD7158';
-const LINE_VARIANTS = [['line', '直線'], ['arrow', '箭頭'], ['curve', '曲線'], ['carrow', '曲線箭頭'], ['poly', '折線']];
-const SHAPE_VARIANTS = [['circle', '圓'], ['ellipse', '橢圓'], ['lasso', '圈面'], ['polyfill', '點連成面'], ['fill', '點一下填滿'], ['angle', '角度']];
-const MARK_VARIANTS = [['fill', '實心'], ['ring', '空心'], ['cross', '十字'], ['x', '叉']];
-const ERASE_VARIANTS = [['whole', '整筆擦掉'], ['part', '擦一段']];
-const SMOOTH_VARIANTS = [[0, '原樣'], [1, '微順'], [2, '圓順'], [3, '很順']];
+const LINE_VARIANTS = [['line', '直線'], ['arrow', '矢印'], ['curve', '曲線'], ['carrow', '曲線矢印'], ['poly', '折れ線']];
+const SHAPE_VARIANTS = [['circle', '円'], ['ellipse', '楕円'], ['lasso', '囲んで面'], ['polyfill', '点をつないで面'], ['fill', 'タップで塗る'], ['angle', '角度']];
+const MARK_VARIANTS = [['fill', '塗り'], ['ring', '白抜き'], ['cross', '十字'], ['x', 'バツ']];
+const ERASE_VARIANTS = [['whole', '1本ごと消す'], ['part', '一部だけ消す']];
+const SMOOTH_VARIANTS = [[0, 'そのまま'], [1, '少しなめらか'], [2, 'なめらか'], [3, 'とてもなめらか']];
 const TOOL_TIPS = {
-  select: '點一筆選取；拖空白處移動畫面，兩指縮放。',
-  line: { line: '按住拖出一條直線；接近水平、垂直、45° 會自動轉正。', arrow: '按住拖出箭頭（終點有箭頭）。', curve: '先拖出直線，再拖中間的方塊把它彎起來。', carrow: '先拖出直線箭頭，再拖中間的方塊彎起來。', poly: '一下一下點出轉折，按「完成」結束。' },
-  free: '按住隨手畫；放開後照「平滑」整理。',
-  dot: '點一下放一個點。',
-  shape: { circle: '按住拖出一個圓。', ellipse: '按住拖出橢圓的外框。', lasso: '按住繞一圈，圈出一塊面。', polyfill: '一下一下點出面的角，按「完成」閉合。', fill: '點在線圍起來的地方，就把那一塊填滿（邊界＝線和頭的外框）。', angle: '從角的頂點拖到一邊，放開後拖另一邊的端點調角度。' },
-  text: '點一下放文字。',
-  icon: '點一下放工具圖示；選取後可以轉方向、改大小。',
-  erase: { whole: '劃過的那一筆整筆擦掉。', part: '只擦掉劃過的那一段（線會斷成兩段）。' },
+  select: '線をタップして選択。空いている所をドラッグで画面移動、2本指で拡大縮小。',
+  line: { line: '押したままドラッグで直線。水平・垂直・45° に近いと自動でそろいます。', arrow: '押したままドラッグで矢印（終点に矢印）。', curve: 'まず直線を引き、真ん中の四角をドラッグして曲げます。', carrow: 'まず直線の矢印を引き、真ん中の四角をドラッグして曲げます。', poly: '曲がり角を1つずつタップし、「完了」で終わります。' },
+  free: '押したまま自由に描きます。指を離すと「なめらかさ」の設定で整えます。',
+  dot: 'タップして点を置きます。',
+  shape: { circle: '押したままドラッグで円。', ellipse: '押したままドラッグで楕円の外枠。', lasso: '押したまま1周なぞって面を作ります。', polyfill: '面の角を1つずつタップし、「完了」で閉じます。', fill: '線で囲まれた所をタップすると塗りつぶします（境目＝線と頭の外枠）。', angle: '角の頂点から片側へドラッグし、離したらもう片側の端をドラッグして角度を決めます。' },
+  text: 'タップして文字を置きます。',
+  icon: 'タップして道具アイコンを置きます。選択すると向きと大きさを変えられます。',
+  erase: { whole: 'なぞった線を1本まるごと消します。', part: 'なぞった部分だけ消します（線は2本に分かれます）。' },
 };
 const FAMILY = { line: 'line', free: 'free', dot: 'dot', shape: 'shape', text: 'text', icon: 'icon' };
 const defaultStyles = () => ({
@@ -97,7 +97,7 @@ export function createFlat(app) {
   function openStep(i) {
     stopPlay(); cancelDraft();
     stepIdx = i; selId = null; history.length = 0; future.length = 0;
-    try { shapes = L.stepShapes(step()); } catch (e) { toast('這一步的圖讀不進來：' + e.message, 4000); shapes = []; }
+    try { shapes = L.stepShapes(step()); } catch (e) { toast('このステップの図が読み込めません：' + e.message, 4000); shapes = []; }
     below = [];
     for (let j = 0; j < stepIdx; j++) { try { below.push(...L.stepShapes(drawing.steps[j])); } catch { /* 讀不進來的步驟略過 */ } }
     renderAll(); syncSel(); app.changed();
@@ -175,8 +175,8 @@ export function createFlat(app) {
     canvas.hidden = mode !== 'preview';
     root.dataset.layout = all ? 'all' : 'one'; // 總覽時結構線鈕移到右下角的空位（不蓋到「右側」）
     $('#fl-layout').setAttribute('aria-pressed', String(all));
-    $('#fl-layout span').textContent = all ? '單一視圖' : '總覽';
-    $('#fl-layout').setAttribute('aria-label', all ? '回到單一視圖' : '五個視圖的總覽');
+    $('#fl-layout span').textContent = all ? '1方向' : '一覧';
+    $('#fl-layout').setAttribute('aria-label', all ? '1方向に戻る' : '5方向の一覧');
     $('#fl-tabs').hidden = false;
     document.querySelectorAll('#fl-tabs [data-view]').forEach(b => { b.classList.toggle('on', !all && b.dataset.view === view); b.setAttribute('aria-pressed', String(!all && b.dataset.view === view)); });
     $('#fl-more').hidden = all || mode !== 'draw';
@@ -218,7 +218,7 @@ export function createFlat(app) {
       cell.querySelector('.below').innerHTML = belowIn(v).map(s => shapeSvg(s, { ghost })).join('');
       cell.querySelector('.sh').innerHTML = inView(v).map(s => shapeSvg(s)).join('');
       const n = inView(v).length;
-      cell.querySelector('.n').textContent = n ? n + ' 筆' : '';
+      cell.querySelector('.n').textContent = n ? n + ' 個' : '';
     }
   }
   // 選取框、把手、吸附點、輔助線（大小照螢幕像素，換算成公釐）
@@ -356,7 +356,7 @@ export function createFlat(app) {
     const bar = $('#fl-draftbar');
     bar.hidden = !draft;
     if (!draft) return;
-    $('#fl-draft-text').textContent = draft.kind === 'poly' ? '折線：已點 ' + draft.pts.length + ' 個點' : '面：已點 ' + draft.pts.length + ' 個角';
+    $('#fl-draft-text').textContent = draft.kind === 'poly' ? '折れ線：' + draft.pts.length + ' 点タップ済み' : '面：' + draft.pts.length + ' 個の角をタップ済み';
     $('#fl-draft-done').disabled = draft.pts.length < (draft.kind === 'poly' ? 2 : 3);
   }
   function finishDraft() {
@@ -663,8 +663,8 @@ export function createFlat(app) {
     for (let i = 0; i < W * H; i++) wall[i] = data[i * 4 + 3] > 60 ? 1 : 0;
     const x = Math.round((p[0] - b.x) * G), y = Math.round((p[1] - b.y) * G);
     const f = SN.flood(wall, W, H, x, y);
-    if (!f.count) { toast('點在線上了：點線圍起來的裡面', 2000); return; }
-    if (f.touchesEdge) { toast('這裡沒有圍起來（會填到整張紙）：先畫線把它圍住', 2600); return; }
+    if (!f.count) { toast('線の上をタップしました：線で囲まれた内側をタップしてください', 2000); return; }
+    if (f.touchesEdge) { toast('ここは囲まれていません（紙全体が塗られます）：先に線で囲んでください', 2600); return; }
     const pts = SN.traceMask(SN.grow(f.mask, W, H, 1), W, H, 0.9).map(q => [b.x + q[0] / G, b.y + q[1] / G]);
     if (pts.length < 3) return;
     create(S.newShape({ type: 'region', view, pts, smooth: false, style: shapeStyle() }));
@@ -705,7 +705,7 @@ export function createFlat(app) {
     box.classList.toggle('icons', key === 'icon');
     box.hidden = !list;
     const tip = tool === 'select' ? TOOL_TIPS.select : typeof TOOL_TIPS[tool] === 'string' ? TOOL_TIPS[tool] : (TOOL_TIPS[tool] || {})[cur];
-    $('#fl-tip').textContent = layout === 'all' ? '總覽：點一個視圖進去畫。' : tip || '';
+    $('#fl-tip').textContent = layout === 'all' ? '一覧：描きたい方向をタップしてください。' : tip || '';
     $('#fl-snap').setAttribute('aria-pressed', String(!!settings().snap));
     $('#fl-mirror').setAttribute('aria-pressed', String(!!settings().mirror));
     syncStyleRow();
@@ -770,7 +770,7 @@ export function createFlat(app) {
     bar.hidden = !s || mode !== 'draw';
     $('#fl-optrow').hidden = !!s || mode !== 'draw';
     if (s) {
-      $('#fl-sel-label').textContent = S.TYPE_LABELS[s.type] + (s.mirrorPairId ? '・鏡像' : '');
+      $('#fl-sel-label').textContent = S.TYPE_LABELS[s.type] + (s.mirrorPairId ? '・ミラー' : '');
       $('#fl-sel-edit').hidden = s.type !== 'text';
       $('#fl-sel-reverse').hidden = !S.PATH_TYPES.includes(s.type) && s.type !== 'angle';
       $('#fl-sel-label-btn').classList.toggle('has', !!s.label);
@@ -793,10 +793,10 @@ export function createFlat(app) {
   function styleAll() {
     const s = sel(); if (!s) return;
     const same = inView(view).filter(x => x.type === s.type && x !== s);
-    if (!same.length) { toast('這個視圖沒有別的' + S.TYPE_LABELS[s.type]); return; }
+    if (!same.length) { toast('この方向にはほかの' + S.TYPE_LABELS[s.type] + 'がありません'); return; }
     pushHistory();
     for (const x of same) { x.style = { ...x.style, color: s.style.color, ...(S.PATH_TYPES.includes(s.type) || ['ellipse', 'region', 'angle'].includes(s.type) ? { width: s.style.width, dash: s.style.dash } : {}) }; if (s.type === 'dot') x.r = s.r; syncPartner(x); }
-    commit(); app.changed(); toast('這個視圖的 ' + (same.length + 1) + ' 筆' + S.TYPE_LABELS[s.type] + '都換成這個樣式');
+    commit(); app.changed(); toast('この方向の' + S.TYPE_LABELS[s.type] + '（' + (same.length + 1) + ' 個）をすべてこのスタイルにしました');
   }
   function zOrder(dir) {
     const s = sel(); if (!s) return;
@@ -804,19 +804,19 @@ export function createFlat(app) {
     if (j < 0 || j >= shapes.length || j === i) return;
     pushHistory(); shapes.splice(i, 1); shapes.splice(j, 0, s); commit(); app.changed();
   }
-  function unpair() { const s = sel(); if (!s || !s.mirrorPairId) return; pushHistory(); const p = byId(s.mirrorPairId); if (p) delete p.mirrorPairId; delete s.mirrorPairId; commit(); toast('解開鏡像：之後兩邊分開改'); }
+  function unpair() { const s = sel(); if (!s || !s.mirrorPairId) return; pushHistory(); const p = byId(s.mirrorPairId); if (p) delete p.mirrorPairId; delete s.mirrorPairId; commit(); toast('ミラーを解除：これからは左右を別々に変えます'); }
 
   // 完善線條：線端很近的接起來、靠近頭的外框或別的線的延長／縮短到剛好碰到
   function magic() {
     const s = sel();
     const targets = s ? [s] : inView(view).filter(x => S.PATH_TYPES.includes(x.type));
-    if (!targets.length) { toast('這個視圖還沒有線'); return; }
+    if (!targets.length) { toast('この方向にはまだ線がありません'); return; }
     const before = snap();
     const n = SN.magicAlign(targets, inView(view).concat(belowIn(view)), refPaths(), pxMm());
-    if (!n) { toast('附近沒有可調整的線端'); return; }
+    if (!n) { toast('近くに整えられる線の端がありません'); return; }
     history.push(before); future.length = 0;
     for (const x of targets) syncPartner(x);
-    commit(); app.changed(); toast('完善了 ' + n + ' 個線端');
+    commit(); app.changed(); toast(n + ' か所の線の端を整えました');
   }
   // 整側鏡像：左側 → 右側（或反過來）；對稱的視圖：左半 → 右半
   function mirrorSide(dir) {
@@ -827,14 +827,14 @@ export function createFlat(app) {
       shapes = shapes.filter(s => s.view !== to || false);
       for (const s of shapes.filter(x => x.view === from)) { const m = mirroredOf(s); m.id = S.newId(); s.mirrorPairId = m.id; m.mirrorPairId = s.id; shapes.push(m); n++; }
       for (const s of shapes) if (s.mirrorPairId && !byId(s.mirrorPairId)) delete s.mirrorPairId;
-      toast(viewById(from).label + '的 ' + n + ' 筆鏡像到' + viewById(to).label + '（' + viewById(to).label + '原本的筆換掉了）', 3200);
+      toast(viewById(from).label + 'の ' + n + ' 個を' + viewById(to).label + 'にミラーしました（' + viewById(to).label + 'の元の線は置き換えました）', 3200);
     } else {
       const keepLeft = dir === 'l2r', side = s => S.center(s)[0];
       // 畫面左半邊＝x<0
       shapes = shapes.filter(s => s.view !== view || (keepLeft ? side(s) <= 0.5 : side(s) >= -0.5));
       for (const s of shapes.filter(x => x.view === view && (keepLeft ? side(x) < -0.5 : side(x) > 0.5))) { const m = mirroredOf(s); m.id = S.newId(); s.mirrorPairId = m.id; m.mirrorPairId = s.id; shapes.push(m); n++; }
       for (const s of shapes) if (s.mirrorPairId && !byId(s.mirrorPairId)) delete s.mirrorPairId;
-      toast((keepLeft ? '左半邊' : '右半邊') + '的 ' + n + ' 筆鏡像到另一半（另一半原本的筆換掉了）', 3200);
+      toast((keepLeft ? '左半分' : '右半分') + 'の ' + n + ' 個をもう半分へミラーしました（もう半分の元の線は置き換えました）', 3200);
     }
     selId = null; commit(); app.changed();
   }
@@ -842,7 +842,7 @@ export function createFlat(app) {
   function addTemplate(key, everyView) {
     const sc = head.scalp, lms = head.landmarks;
     let specs;
-    try { specs = TPL.templateLines(sc, lms, key, null); } catch (e) { toast(TPL.TEMPLATE_LABELS[key] + '畫不出來：' + e.message); return; }
+    try { specs = TPL.templateLines(sc, lms, key, null); } catch (e) { toast(TPL.TEMPLATE_LABELS[key] + 'が描けません：' + e.message); return; }
     const dense3 = specs.map(sp => {
       if (sp.shape === 'line' && sp.section) return SEC.sectionDense(sc, sp.section, sp.points[0], sp.points[1]) || SEC.sectionBridged(sc, sp.section, sp.points[0], sp.points[1]) || sc.line(sp.points[0], sp.points[1]);
       if (sp.shape === 'curve') return sc.curveWithBends(sp.points, []);
@@ -855,8 +855,8 @@ export function createFlat(app) {
       const pts = S.simplify(run, 0.25); if (pts.length < 2 || S.pathLength(pts) < 4) continue;
       shapes.push(S.newShape({ type: pts.length === 2 ? 'line' : 'poly', view: v, pts, style: { color: styles.line.color, width: styles.line.width, dash: styles.line.dash } })); n++;
     }
-    if (!n) { history.pop(); toast('這個視圖看不到' + TPL.TEMPLATE_LABELS[key]); return; }
-    commit(); app.changed(); toast(TPL.TEMPLATE_LABELS[key] + '畫好了（' + n + ' 條；要調整用「選取」）', 2600);
+    if (!n) { history.pop(); toast(TPL.TEMPLATE_LABELS[key] + 'はこの方向からは見えません'); return; }
+    commit(); app.changed(); toast(TPL.TEMPLATE_LABELS[key] + 'を描きました（' + n + ' 本。直すときは「選択」）', 2600);
   }
 
   // ---------------------------------------------------------------- 文字、標字
@@ -927,8 +927,8 @@ export function createFlat(app) {
   function setSetting(k, v) { settings()[k] = v; app.saved(); syncEye(); syncTools(); renderAll(); if (mode === 'preview') drawFrame(); }
   function syncViewPop() {
     const side = view === 'left' || view === 'right';
-    $('#fl-ms-a').textContent = side ? viewById(view).label + ' → ' + viewById(mirrorView(view)).label : '左半 → 右半';
-    $('#fl-ms-b').textContent = side ? viewById(mirrorView(view)).label + ' → ' + viewById(view).label : '右半 → 左半';
+    $('#fl-ms-a').textContent = side ? viewById(view).label + ' → ' + viewById(mirrorView(view)).label : '左半分 → 右半分';
+    $('#fl-ms-b').textContent = side ? viewById(mirrorView(view)).label + ' → ' + viewById(view).label : '右半分 → 左半分';
     $('#fl-vnote').value = (drawing.viewNotes || {})[view] || '';
     $('#fl-back-clear').hidden = !backs[view];
     $('#fl-vp-title').textContent = viewById(view).label;
@@ -971,7 +971,7 @@ export function createFlat(app) {
   function syncPlayer() {
     const p = $('#fl-play');
     if (!p) return;
-    p.setAttribute('aria-label', play && play.playing ? '暫停' : '播放');
+    p.setAttribute('aria-label', play && play.playing ? '一時停止' : '再生');
     p.querySelector('use').setAttribute('href', play && play.playing ? '#i-pause' : '#i-play');
     document.querySelectorAll('#fl-speed [data-speed]').forEach(b => b.classList.toggle('on', b.dataset.speed === settings().speed));
   }
@@ -1009,7 +1009,7 @@ export function createFlat(app) {
 
   // ---------------------------------------------------------------- 輸出
   const allUpTo = j => { const out = []; for (let i = 0; i <= j; i++) out.push(...stepShapesAt(i)); return out; };
-  const canvasBlob = (c, type = 'image/png', q) => new Promise((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('圖產生不出來'))), type, q));
+  const canvasBlob = (c, type = 'image/png', q) => new Promise((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('画像を作れません'))), type, q));
   function renderCanvas(W, H, views, list, opt = {}) {
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     drawLayout(c.getContext('2d'), W, H, views, v => list.filter(s => s.view === v), null, { bg: '#fff', ...opt });
@@ -1024,7 +1024,7 @@ export function createFlat(app) {
   }
   // 預覽的「儲存照片」：總覽＝五視圖總表，單一視圖＝這個視圖（都畫到這一步為止、白底）
   async function photo() {
-    if (layout === 'all') return { blob: await canvasBlob(await sheetCanvas()), name: name('五視圖', 'png') };
+    if (layout === 'all') return { blob: await canvasBlob(await sheetCanvas()), name: name('5方向', 'png') };
     return { blob: await viewPng(), name: name(viewById(view).label, 'png') };
   }
   async function viewPng(v = view, W = 1600) { const H = Math.round(W * PAGE.h / PAGE.w); return canvasBlob(renderCanvas(W, H, [v], allUpTo(stepIdx))); }
@@ -1034,17 +1034,17 @@ export function createFlat(app) {
     return c;
   }
   const headLine = () => (head && head.model ? head.model.label + '（' + head.model.sub + '）' : '');
-  const name = (suffix, ext) => '頭圖_' + app.fileSafe(drawing.title) + '_' + L.stepLabel(stepIdx) + (suffix ? '_' + suffix : '') + '_' + app.stamp() + '.' + ext;
+  const name = (suffix, ext) => 'カット図_' + app.fileSafe(drawing.title) + '_' + L.stepLabel(stepIdx) + (suffix ? '_' + suffix : '') + '_' + app.stamp() + '.' + ext;
   async function output(kind) {
     if (!drawing) return;
     try {
-      if (kind === 'png-view') { app.downloadBlob(await viewPng(), name(viewById(view).label, 'png')); toast('已產生「' + viewById(view).label + '」的 PNG'); }
+      if (kind === 'png-view') { app.downloadBlob(await viewPng(), name(viewById(view).label, 'png')); toast('「' + viewById(view).label + '」の PNG をダウンロードしました'); }
       else if (kind === 'share-view') app.shareBlob(await viewPng(), name(viewById(view).label, 'png'), drawing.title);
-      else if (kind === 'png-sheet') { app.downloadBlob(await canvasBlob(await sheetCanvas()), name('五視圖', 'png')); toast('已產生五視圖總表 PNG'); }
-      else if (kind === 'pdf') { toast('產生 PDF 中…', 1500); app.downloadBlob(await makePdf(), name('', 'pdf')); toast('已產生 PDF'); }
+      else if (kind === 'png-sheet') { app.downloadBlob(await canvasBlob(await sheetCanvas()), name('5方向', 'png')); toast('5方向まとめ PNG を作りました'); }
+      else if (kind === 'pdf') { toast('PDF を作成中…', 1500); app.downloadBlob(await makePdf(), name('', 'pdf')); toast('PDF を作りました'); }
       else if (kind === 'video') await recordVideo();
-      else if (kind === 'carousel') { toast('產生輪播圖中…', 1500); app.downloadBlob(await makeCarousel(), name('輪播圖', 'zip')); toast('已產生社群輪播圖（ZIP，1080×1350）', 3000); }
-    } catch (e) { toast('輸出失敗：' + (e && e.message || e), 4000); }
+      else if (kind === 'carousel') { toast('カルーセル画像を作成中…', 1500); app.downloadBlob(await makeCarousel(), name('カルーセル', 'zip')); toast('SNS用カルーセル画像を作りました（ZIP・1080×1350）', 3000); }
+    } catch (e) { toast('書き出しできませんでした：' + (e && e.message || e), 4000); }
   }
   async function jpegPage(c, pw) { const b = await canvasBlob(c, 'image/jpeg', 0.9); return { jpeg: new Uint8Array(await b.arrayBuffer()), w: c.width, h: c.height, pw, ph: Math.round(pw * c.height / c.width) }; }
   // 文字頁（筆記）：canvas 畫字，自動換行
@@ -1074,9 +1074,9 @@ export function createFlat(app) {
       stampTitle(c, viewById(v).label, drawing.title);
       pages.push(await jpegPage(c, 595));
     }
-    const notes = [['整張的筆記', drawing.note || ''], ...VIEW_IDS.map(v => [viewById(v).label, (drawing.viewNotes || {})[v] || ''])];
+    const notes = [['全体のメモ', drawing.note || ''], ...VIEW_IDS.map(v => [viewById(v).label, (drawing.viewNotes || {})[v] || ''])];
     const steps = drawing.steps.map((s, i) => L.stepLabel(i) + '　' + L.stepName(drawing, i)).join('\n');
-    pages.push(await jpegPage(notesCanvas(drawing.title, [['步驟', steps], ['頭模', headLine()], ...notes]), 595));
+    pages.push(await jpegPage(notesCanvas(drawing.title, [['ステップ', steps], ['ヘッド', headLine()], ...notes]), 595));
     // 照片：一頁最多四張
     const ids = drawing.photos || [];
     for (let i = 0; i < ids.length; i += 4) {
@@ -1097,8 +1097,8 @@ export function createFlat(app) {
       const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
       drawLayout(ctx, W, H * 0.8, VIEW_IDS, v => list.filter(s => s.view === v), null, { bg: '#fff' });
       ctx.fillStyle = '#363B49'; ctx.font = '700 64px system-ui, "PingFang TC", "Microsoft JhengHei", sans-serif'; ctx.fillText(drawing.title, 60, H * 0.88);
-      ctx.fillStyle = '#7A8089'; ctx.font = '500 34px system-ui, sans-serif'; ctx.fillText(drawing.steps.length + ' 個步驟・' + headLine(), 60, H * 0.88 + 56);
-      files.push({ name: '01_封面.png', data: await enc(c) });
+      ctx.fillStyle = '#7A8089'; ctx.font = '500 34px system-ui, sans-serif'; ctx.fillText(drawing.steps.length + ' ステップ・' + headLine(), 60, H * 0.88 + 56);
+      files.push({ name: '01_表紙.png', data: await enc(c) });
     }
     let n = 2;
     for (let j = 0; j < drawing.steps.length; j++) {
@@ -1115,14 +1115,14 @@ export function createFlat(app) {
   }
   // 動畫影片：照現在的版面（單一視圖或總覽），從第一步播到最後一步，錄成影片
   async function recordVideo() {
-    if (!window.MediaRecorder) { toast('這個瀏覽器不能錄影片'); return; }
+    if (!window.MediaRecorder) { toast('このブラウザでは動画を録画できません'); return; }
     const single = layout !== 'all', W = single ? 1080 : 1600, H = single ? Math.round(1080 * PAGE.h / PAGE.w / 2) * 2 : 1200;
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const ctx = c.getContext('2d'), views = visibleViews();
     const p = makePlay('all');
     const types = ['video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'];
     const type = types.find(t => MediaRecorder.isTypeSupported(t));
-    if (!type) { toast('這個瀏覽器不能錄影片'); return; }
+    if (!type) { toast('このブラウザでは動画を録画できません'); return; }
     const stream = c.captureStream(AN.FPS), rec = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 12e6 }), chunks = [];
     rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
     const done = new Promise(res => { rec.onstop = res; });
@@ -1130,13 +1130,13 @@ export function createFlat(app) {
     const frame = f => { const pr = AN.progressAt(p.tl, f); for (const [k, v] of pr) pr.set(k, AN.ease(v)); drawLayout(ctx, W, H, views, v => list.filter(s => s.view === v), pr, { bg: '#fff' }); };
     frame(0);
     rec.start();
-    toast('錄影中（' + Math.ceil(p.tl.frames / AN.FPS) + ' 秒）…', p.tl.frames / AN.FPS * 1000);
+    toast('録画中（' + Math.ceil(p.tl.frames / AN.FPS) + ' 秒）…', p.tl.frames / AN.FPS * 1000);
     const t0 = performance.now();
     await new Promise(res => { const tick = () => { const f = (performance.now() - t0) / (1000 / AN.FPS); frame(Math.min(f, p.tl.frames)); if (f >= p.tl.frames + 4) res(); else requestAnimationFrame(tick); }; requestAnimationFrame(tick); });
     rec.stop(); await done;
     const ext = type.startsWith('video/mp4') ? 'mp4' : 'webm';
-    app.downloadBlob(new Blob(chunks, { type: type.split(';')[0] }), name('動畫', ext));
-    toast('已產生動畫影片（' + ext.toUpperCase() + '）');
+    app.downloadBlob(new Blob(chunks, { type: type.split(';')[0] }), name('アニメーション', ext));
+    toast('アニメーション動画を作りました（' + ext.toUpperCase() + '）');
   }
   // 首頁縮圖：五視圖總表的小圖
   async function thumbnail() {
@@ -1240,8 +1240,8 @@ export function createFlat(app) {
   $('#fl-layout').addEventListener('click', () => { setLayout(layout === 'all' ? 'one' : 'all'); if (mode === 'preview') playStep(); });
   $('#fl-fit').addEventListener('click', fit);
   $('#fl-more').addEventListener('click', () => togglePop('fl-view-pop'));
-  $('#fl-snap').addEventListener('click', () => { setSetting('snap', !settings().snap); toast(settings().snap ? '磁吸開：點位、線端、頭的外框、方向' : '磁吸關', 1500); });
-  $('#fl-mirror').addEventListener('click', () => { setSetting('mirror', !settings().mirror); toast(settings().mirror ? '鏡像開：' + (isSymmetric(view) ? '畫一邊，另一邊自動畫' : '畫在' + viewById(view).label + '，' + viewById(mirrorView(view)).label + '也自動畫') : '鏡像關', 1800); });
+  $('#fl-snap').addEventListener('click', () => { setSetting('snap', !settings().snap); toast(settings().snap ? 'スナップオン：ポイント・線の端・頭の外枠・向き' : 'スナップオフ', 1500); });
+  $('#fl-mirror').addEventListener('click', () => { setSetting('mirror', !settings().mirror); toast(settings().mirror ? 'ミラーオン：' + (isSymmetric(view) ? '片側に描くと反対側にも自動で描きます' : viewById(view).label + 'に描くと' + viewById(mirrorView(view)).label + 'にも自動で描きます') : 'ミラーオフ', 1800); });
   $('#fl-magic').addEventListener('click', magic);
   $('#fl-draft-done').addEventListener('click', finishDraft);
   $('#fl-draft-cancel').addEventListener('click', cancelDraft);
@@ -1250,7 +1250,7 @@ export function createFlat(app) {
   document.querySelectorAll('#fl-dash [data-dash]').forEach(b => b.addEventListener('click', () => applyStyle({ style: { dash: b.dataset.dash } })));
   document.querySelectorAll('#fl-width [data-w]').forEach(b => b.addEventListener('click', () => applyStyle({ style: { width: +b.dataset.w } })));
   $('#fl-size-dec').addEventListener('click', () => stepSize(-1)); $('#fl-size-inc').addEventListener('click', () => stepSize(1));
-  $('#fl-swatches').innerHTML = S.COLORS.map(c => `<button type="button" class="sw" data-color="${c}" style="--sw:${c}" aria-label="顏色 ${c}"></button>`).join('') + '<label class="sw custom" style="--sw:#7A8089"><svg aria-hidden="true"><use href="#i-plus"/></svg><input type="color" id="fl-color-input" value="#7A8089" aria-label="自訂顏色"></label>';
+  $('#fl-swatches').innerHTML = S.COLORS.map(c => `<button type="button" class="sw" data-color="${c}" style="--sw:${c}" aria-label="色 ${c}"></button>`).join('') + '<label class="sw custom" style="--sw:#7A8089"><svg aria-hidden="true"><use href="#i-plus"/></svg><input type="color" id="fl-color-input" value="#7A8089" aria-label="自分で色を選ぶ"></label>';
   $('#fl-swatches').addEventListener('click', e => { const b = e.target.closest('[data-color]'); if (b) applyStyle({ style: { color: b.dataset.color } }); });
   $('#fl-color-input').addEventListener('change', e => applyStyle({ style: { color: e.target.value.toUpperCase() } }));
   for (const k of ['a', 'b']) document.querySelectorAll(`#fl-end-${k} [data-end]`).forEach(b => b.addEventListener('click', () => applyStyle({ ends: { [k]: b.dataset.end } })));
@@ -1292,7 +1292,7 @@ export function createFlat(app) {
   $('#fl-tpl-all').addEventListener('click', e => { const b = e.currentTarget; b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); });
   $('#fl-ms-a').addEventListener('click', () => { closePops(); mirrorSide(view === 'left' || view === 'right' ? 'to-other' : 'l2r'); });
   $('#fl-ms-b').addEventListener('click', () => { closePops(); mirrorSide(view === 'left' || view === 'right' ? 'from-other' : 'r2l'); });
-  $('#fl-view-clear').addEventListener('click', () => { closePops(); const n = inView(view).length; if (!n || !confirm('清掉這一步在「' + viewById(view).label + '」的 ' + n + ' 筆？（可以按復原）')) return; pushHistory(); shapes = shapes.filter(s => s.view !== view); for (const s of shapes) if (s.mirrorPairId && !byId(s.mirrorPairId)) delete s.mirrorPairId; selId = null; commit(); app.changed(); });
+  $('#fl-view-clear').addEventListener('click', () => { closePops(); const n = inView(view).length; if (!n || !confirm('このステップの「' + viewById(view).label + '」の ' + n + ' 個を消しますか？（元に戻すで戻せます）')) return; pushHistory(); shapes = shapes.filter(s => s.view !== view); for (const s of shapes) if (s.mirrorPairId && !byId(s.mirrorPairId)) delete s.mirrorPairId; selId = null; commit(); app.changed(); });
   $('#fl-view-png').addEventListener('click', () => { closePops(); output('png-view'); });
   $('#fl-vnote').addEventListener('input', e => { const t = e.target.value.slice(0, L.NOTE_MAX); drawing.viewNotes = { ...(drawing.viewNotes || {}) }; if (t) drawing.viewNotes[view] = t; else delete drawing.viewNotes[view]; if (!Object.keys(drawing.viewNotes).length) delete drawing.viewNotes; app.saved(); });
   $('#fl-back-pick').addEventListener('click', () => $('#fl-back-input').click());
@@ -1303,14 +1303,14 @@ export function createFlat(app) {
       const id = await media.addImage(f, 2000);
       drawing.backs = { ...(drawing.backs || {}), [view]: id };
       if (old && !app.lib().drawings.some(d => Object.values(d.backs || {}).includes(old))) media.del(old).catch(() => {});
-      app.saved(); await loadBacks(); renderAll(); toast('「' + viewById(view).label + '」換成自己的底圖');
-    } catch (err) { toast('底圖讀不進來：' + err.message); }
+      app.saved(); await loadBacks(); renderAll(); toast('「' + viewById(view).label + '」の下絵を自分の写真にしました');
+    } catch (err) { toast('下絵が読み込めません：' + err.message); }
   });
   $('#fl-back-clear').addEventListener('click', () => {
     closePops(); const id = (drawing.backs || {})[view]; if (!id) return;
     delete drawing.backs[view]; if (!Object.keys(drawing.backs).length) delete drawing.backs;
     if (!app.lib().drawings.some(d => Object.values(d.backs || {}).includes(id))) media.del(id).catch(() => {});
-    app.saved(); loadBacks().then(renderAll); toast('換回頭模的線稿');
+    app.saved(); loadBacks().then(renderAll); toast('ヘッドの線画に戻しました');
   });
   // 預覽
   $('#fl-play').addEventListener('click', () => { if (play && play.playing) stopPlay(); else if (play && play.frame < play.tl.frames) { play.playing = true; const t0 = performance.now(), f0 = play.frame; const tick = now => { if (!play || !play.playing) return; play.frame = f0 + (now - t0) / (1000 / AN.FPS); if (play.frame >= play.tl.frames) { play.frame = play.tl.frames; play.playing = false; } drawFrame(); syncPlayer(); if (play.playing) play.raf = requestAnimationFrame(tick); }; play.raf = requestAnimationFrame(tick); syncPlayer(); } else playStep(play ? play.scope : 'step'); });
@@ -1329,7 +1329,7 @@ export function createFlat(app) {
     if (stepIdx === drawing.steps.length - 1) L.addStep(drawing, stepIdx);
     const next = drawing.steps[stepIdx + 1], list = L.stepShapes(next);
     list.push(...moving); L.storeStepShapes(next, list); app.saved();
-    toast('移到下一步了（' + L.stepLabel(stepIdx + 1) + '）');
+    toast('次のステップに移しました（' + L.stepLabel(stepIdx + 1) + '）');
   }
 
   return {

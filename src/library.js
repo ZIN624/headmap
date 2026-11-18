@@ -16,7 +16,7 @@ export const LIBRARY_FORMAT = 'head3d-library';
 export const DRAWING_FORMAT = 'head3d-drawing';
 export const FORMAT_VERSION = 1;
 export const STORAGE_KEY = 'head3d.library';
-export const UNTITLED = '未命名頭圖';
+export const UNTITLED = '名前のないカット図';
 export const DEFAULT_HEAD = 'ict';     // 沒記頭模的檔案＝畫在這顆頭上
 export const KINDS = ['3d', '2d'];
 export const TRASH_DAYS = 30;          // 回收桶留幾天
@@ -61,7 +61,7 @@ export const stepItems = s => (s ? s.shapes || s.layers || [] : []);
 
 // 步驟的編號（01、02…）與名字（沒取名就叫「步驟 N」）
 export const stepLabel = i => String(i + 1).padStart(2, '0');
-export const stepName = (drawing, i) => { const s = drawing.steps[i]; return s ? (s.title || '步驟 ' + (i + 1)) : ''; };
+export const stepName = (drawing, i) => { const s = drawing.steps[i]; return s ? (s.title || 'ステップ ' + (i + 1)) : ''; };
 // 「前面步驟變淡」要疊哪幾步：排在前面、而且有畫東西的
 export function ghostIndices(drawing, i) {
   const out = [];
@@ -84,7 +84,7 @@ export function duplicateStep(drawing, i) {
   const src = drawing.steps[i], copy = clone(src);
   copy.id = newId();
   if (src.shapes) copy.shapes = renewIds(src.shapes); else copy.layers = renewIds(src.layers || []);
-  if (src.title) copy.title = src.title + '（複製）';
+  if (src.title) copy.title = src.title + '（コピー）';
   drawing.steps.splice(i + 1, 0, copy);
   return i + 1;
 }
@@ -96,14 +96,14 @@ export function moveStep(drawing, i, dir) {
   return j;
 }
 export function deleteStep(drawing, i) {
-  if (drawing.steps.length <= 1) throw new Error('至少要留一個步驟');
+  if (drawing.steps.length <= 1) throw new Error('ステップは1つ以上残してください');
   drawing.steps.splice(i, 1);
   return Math.min(i, drawing.steps.length - 1);
 }
 // 整張頭圖複製一份（新的 id；照片與底圖共用同一份檔案）
 export function duplicateDrawing(lib, d, now = new Date()) {
   const copy = clone(d);
-  copy.id = newId(); copy.title = (d.title + '（複製）').slice(0, 40); copy.createdAt = copy.updatedAt = now.toISOString();
+  copy.id = newId(); copy.title = (d.title + '（コピー）').slice(0, 40); copy.createdAt = copy.updatedAt = now.toISOString();
   delete copy.trashedAt; delete copy.star;
   copy.steps = d.steps.map(s => { const c = clone(s); c.id = newId(); if (c.shapes) c.shapes = renewIds(c.shapes); else c.layers = renewIds(c.layers || []); return c; });
   lib.drawings.splice(lib.drawings.indexOf(d) + 1, 0, copy);
@@ -120,15 +120,15 @@ export const touch = (d, now = new Date()) => { d.updatedAt = now.toISOString();
 // ---- 資料夾、收藏、回收桶
 export function addFolder(lib, name) {
   const n = cleanName(name);
-  if (!n) throw new Error('資料夾要有名字');
-  if (lib.folders.some(f => f.name === n)) throw new Error('已經有「' + n + '」這個資料夾');
+  if (!n) throw new Error('フォルダには名前が必要です');
+  if (lib.folders.some(f => f.name === n)) throw new Error('「' + n + '」というフォルダはすでにあります');
   const f = { id: newId(), name: n }; lib.folders.push(f); return f;
 }
 export function renameFolder(lib, id, name) {
   const f = lib.folders.find(x => x.id === id), n = cleanName(name);
-  if (!f) throw new Error('找不到這個資料夾');
-  if (!n) throw new Error('資料夾要有名字');
-  if (lib.folders.some(x => x !== f && x.name === n)) throw new Error('已經有「' + n + '」這個資料夾');
+  if (!f) throw new Error('このフォルダが見つかりません');
+  if (!n) throw new Error('フォルダには名前が必要です');
+  if (lib.folders.some(x => x !== f && x.name === n)) throw new Error('「' + n + '」というフォルダはすでにあります');
   f.name = n; return f;
 }
 // 刪資料夾不刪裡面的頭圖：頭圖回到「全部」
@@ -153,7 +153,7 @@ export function listDrawings(lib, { box = 'all', sort = 'updated', query = '' } 
   else if (box !== 'all' && box !== 'trash') list = list.filter(d => d.folder === box);
   if (q) list = list.filter(d => d.title.toLowerCase().includes(q) || (d.note || '').toLowerCase().includes(q));
   const key = sort === 'created' ? d => d.createdAt : d => d.updatedAt || d.createdAt;
-  if (sort === 'title') list.sort((a, b) => a.title.localeCompare(b.title, 'zh-Hant'));
+  if (sort === 'title') list.sort((a, b) => a.title.localeCompare(b.title, 'ja'));
   else list.sort((a, b) => (key(a) < key(b) ? 1 : key(a) > key(b) ? -1 : 0));
   return list;
 }
@@ -166,22 +166,22 @@ function cleanView(v) {
   return { p: v.p.slice(), u: v.u.slice(), z: Number.isFinite(v.z) && v.z > 0 ? v.z : 1, k: typeof v.k === 'string' ? v.k : null };
 }
 function cleanStep(s, where, kind) {
-  if (!s || typeof s !== 'object') throw new Error(where + '格式不對');
+  if (!s || typeof s !== 'object') throw new Error(where + 'の形式が正しくありません');
   const base = { id: typeof s.id === 'string' && s.id ? s.id : undefined, title: typeof s.title === 'string' ? s.title.slice(0, 40) : '' };
   if (kind === '2d') {
     let shapes;
-    try { shapes = saveShapes(parseShapes(Array.isArray(s.shapes) ? s.shapes : [], VIEW_IDS)); } catch (e) { throw new Error(where + '的圖讀不進來：' + e.message); }
+    try { shapes = saveShapes(parseShapes(Array.isArray(s.shapes) ? s.shapes : [], VIEW_IDS)); } catch (e) { throw new Error(where + 'の図が読み込めません：' + e.message); }
     return newStep({ ...base, shapes }, '2d');
   }
   let layers;
-  try { layers = saveLayers(parseLayers(Array.isArray(s.layers) ? s.layers : [])); } catch (e) { throw new Error(where + '的圖讀不進來：' + e.message); }
+  try { layers = saveLayers(parseLayers(Array.isArray(s.layers) ? s.layers : [])); } catch (e) { throw new Error(where + 'の図が読み込めません：' + e.message); }
   const out = newStep({ ...base, layers, view: cleanView(s.view) }, '3d');
   if (s.fall === true) out.fall = true;
   return out;
 }
 function cleanDrawing(d, where) {
-  if (!d || typeof d !== 'object') throw new Error(where + '格式不對');
-  if (!Array.isArray(d.steps) || !d.steps.length) throw new Error(where + '沒有任何步驟');
+  if (!d || typeof d !== 'object') throw new Error(where + 'の形式が正しくありません');
+  if (!Array.isArray(d.steps) || !d.steps.length) throw new Error(where + 'にステップがありません');
   const kind = KINDS.includes(d.kind) ? d.kind : '3d';
   const now = new Date().toISOString();
   const out = {
@@ -191,7 +191,7 @@ function cleanDrawing(d, where) {
     head: typeof d.head === 'string' && /^[a-z0-9_]{1,24}$/.test(d.head) ? d.head : DEFAULT_HEAD,
     createdAt: typeof d.createdAt === 'string' ? d.createdAt : now,
     updatedAt: typeof d.updatedAt === 'string' ? d.updatedAt : (typeof d.createdAt === 'string' ? d.createdAt : now),
-    steps: d.steps.map((s, i) => cleanStep(s, where + '第 ' + (i + 1) + ' 步', kind)),
+    steps: d.steps.map((s, i) => cleanStep(s, where + 'の ' + (i + 1) + ' ステップ目', kind)),
   };
   if (idOk(d.folder)) out.folder = d.folder;
   if (d.star === true) out.star = true;
@@ -210,9 +210,9 @@ function cleanDrawing(d, where) {
 }
 function readJSON(text) {
   let raw;
-  try { raw = typeof text === 'string' ? JSON.parse(text) : text; } catch { throw new Error('不是正確的 JSON'); }
-  if (!raw || typeof raw !== 'object') throw new Error('檔案內容不是物件');
-  if (raw.version > FORMAT_VERSION) throw new Error('這個檔案是比較新的版本存的，這裡讀不了');
+  try { raw = typeof text === 'string' ? JSON.parse(text) : text; } catch { throw new Error('正しい JSON ではありません'); }
+  if (!raw || typeof raw !== 'object') throw new Error('ファイルの中身がオブジェクトではありません');
+  if (raw.version > FORMAT_VERSION) throw new Error('このファイルは新しいバージョンで保存されたため、ここでは読めません');
   return raw;
 }
 // 照片、底圖的 id（匯出時要一起帶的檔案）
@@ -221,10 +221,10 @@ export const mediaIds = d => [...(d.photos || []), ...Object.values(d.backs || {
 export const serializeLibrary = lib => JSON.stringify(lib);
 export function parseLibrary(text) {
   const raw = readJSON(text);
-  if (raw.format !== LIBRARY_FORMAT || !Array.isArray(raw.drawings)) throw new Error('頭圖庫格式不對');
+  if (raw.format !== LIBRARY_FORMAT || !Array.isArray(raw.drawings)) throw new Error('カット図ライブラリの形式が正しくありません');
   const lib = newLibrary();
   lib.settings = cleanSettings(raw.settings);
-  lib.drawings = raw.drawings.map((d, i) => cleanDrawing(d, '第 ' + (i + 1) + ' 張'));
+  lib.drawings = raw.drawings.map((d, i) => cleanDrawing(d, (i + 1) + ' 枚目'));
   if (Array.isArray(raw.folders)) {
     const names = new Set();
     for (const f of raw.folders) { const n = f && cleanName(f.name); if (f && idOk(f.id) && n && !names.has(n)) { names.add(n); lib.folders.push({ id: f.id, name: n }); } }
@@ -257,9 +257,9 @@ export function importInto(lib, text) {
   let list;
   if (raw.format === DRAWING_FORMAT) list = [raw.drawing];
   else if (raw.format === LIBRARY_FORMAT && Array.isArray(raw.drawings)) list = raw.drawings;
-  else throw new Error('看不懂這個檔案：要是這裡匯出的頭圖或頭圖庫 JSON');
+  else throw new Error('このファイルは読めません：ここで書き出したカット図かカット図ライブラリの JSON を使ってください');
   // 先全部檢查完再加進去：其中一張讀不進來，頭圖庫就完全不動
-  const added = list.map((d, i) => cleanDrawing(d, list.length > 1 ? '第 ' + (i + 1) + ' 張' : '這張頭圖'));
+  const added = list.map((d, i) => cleanDrawing(d, list.length > 1 ? (i + 1) + ' 枚目' : 'このカット図'));
   // 資料夾：照名字對到現有的；沒有就新增
   const folderMap = new Map();
   if (raw.format === LIBRARY_FORMAT && Array.isArray(raw.folders)) {
@@ -271,7 +271,7 @@ export function importInto(lib, text) {
   }
   const have = new Set(lib.drawings.map(d => d.id));
   for (const d of added) {
-    if (have.has(d.id)) { d.id = newId(); d.title = (d.title + '（匯入）').slice(0, 40); }
+    if (have.has(d.id)) { d.id = newId(); d.title = (d.title + '（読み込み）').slice(0, 40); }
     if (d.folder) { if (folderMap.has(d.folder)) d.folder = folderMap.get(d.folder); else delete d.folder; }
     delete d.trashedAt;
     have.add(d.id); lib.drawings.push(d);

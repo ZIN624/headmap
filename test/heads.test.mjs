@@ -18,7 +18,7 @@ test('頭模清單：格式對、預設是頭模 4、2D 用頭模 2、每顆的�
   assert.equal(list.default, 'ict');
   assert.equal(H.flatHead(list), 'bl_f'); // 2D 固定用頭模 2
   assert.equal(H.flatHead({ ...list, default2d: 'nope' }), 'ict');
-  assert.deepEqual(H.validateHeads({ ...list, default2d: 'nope' }), ['2D 用的頭模不在清單裡']);
+  assert.deepEqual(H.validateHeads({ ...list, default2d: 'nope' }), ['2D 用のヘッドが一覧にありません']);
   assert.equal(list.models.length, 4);
   for (const m of list.models) {
     assert.ok(existsSync(dir + m.glb), m.glb);

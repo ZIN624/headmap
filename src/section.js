@@ -14,7 +14,7 @@ import { Vector3 } from '../vendor/three/build/three.module.js';
 import { toV, polylineLength, pointAtFraction } from './geometry.js';
 
 const SECTION_KINDS = ['H', 'V', 'F', 'B', 'R'];
-export const SECTION_LABELS = { H: '水平', V: '垂直', F: '前斜', B: '後斜', R: '放射' };
+export const SECTION_LABELS = { H: '水平', V: '垂直', F: '前下がり', B: '前上がり', R: '放射' };
 export const DIAG_DEFAULT = 45, DIAG_MIN = 15, DIAG_MAX = 75, DIAG_STEP = 5;
 export const REPEAT = { countMin: 1, countMax: 10, countDefault: 3, gapMin: 0.5, gapMax: 5, gapStep: 0.5, gapDefault: 1.5 };
 const PANEL_SPACING = 0.015; // 分線拉成髮片時，根線每 1.5 cm 留一個點（髮片的根線才會照著切面走）
@@ -226,9 +226,9 @@ function repeatNormal(scalp, section, a, b) {
 }
 // 平行重複那兩顆方向鈕上的字：[正的方向, 反的方向]
 export function repeatDirLabels(scalp, section, a, b) {
-  if (section.kind !== 'V') return ['往上', '往下'];
+  if (section.kind !== 'V') return ['上へ', '下へ'];
   const n = repeatNormal(scalp, section, a, b);
-  return n && Math.abs(n.z) < Math.abs(n.x) ? ['往左', '往右'] : ['往前', '往後'];
+  return n && Math.abs(n.z) < Math.abs(n.x) ? ['左へ', '右へ'] : ['前へ', '後ろへ'];
 }
 
 // 一個點離一條折線多遠（量到線段上，不是只量到折線的點）

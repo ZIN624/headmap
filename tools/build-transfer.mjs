@@ -31,16 +31,16 @@ for (const m of list.models) {
   // 外輪廓只給一邊（outline.right 沒有）的頭＝左右對稱
   const sk = skeleton(landmarks, outline, structureLines(scalp, landmarks), { symmetric: !meta.outline.right });
   if (!out.labels) out.labels = sk.labels;
-  else if (JSON.stringify(out.labels) !== JSON.stringify(sk.labels)) throw new Error(m.id + '：對照點的順序和其他頭模不一樣');
+  else if (JSON.stringify(out.labels) !== JSON.stringify(sk.labels)) throw new Error(m.id + '：対応点の順番がほかのヘッドと違います');
   out.heads[m.id] = { pts: sk.pts };
-  console.log(`${m.id}　${sk.pts.length} 個對照點　${Date.now() - started} ms`);
+  console.log(`${m.id}　${sk.pts.length} 個の対応点　${Date.now() - started} ms`);
 }
 
 const target = dir + 'transfer.json', text = JSON.stringify(out);
 if (check) {
   const same = readFileSync(target, 'utf8') === text;
-  console.log(same ? 'transfer.json 和算出來的一樣' : 'transfer.json 和算出來的不一樣，請重跑 node tools/build-transfer.mjs');
+  console.log(same ? 'transfer.json は計算結果と一致しています' : 'transfer.json が計算結果と違います。node tools/build-transfer.mjs を実行し直してください');
   process.exit(same ? 0 : 1);
 }
 writeFileSync(target, text);
-console.log('已寫入 assets/heads/transfer.json');
+console.log('assets/heads/transfer.json に書き出しました');

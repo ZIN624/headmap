@@ -41,7 +41,7 @@ test('新的一筆：樣式與欄位照種類整理，壞值拉回範圍', () =>
   assert.equal(r.style.fill, true);
   const t = S.newShape({ type: 'text', view: 'back', pts: [[0, 0]], text: '' });
   assert.equal(t.text, '文字');
-  assert.throws(() => S.newShape({ type: 'star', view: 'front', pts: [[0, 0]] }), /種類不認得/);
+  assert.throws(() => S.newShape({ type: 'star', view: 'front', pts: [[0, 0]] }), /不明な種類/);
 });
 
 test('存檔再讀回來是同一筆；不合格的筆說得出是哪一筆', () => {
@@ -59,9 +59,9 @@ test('存檔再讀回來是同一筆；不合格的筆說得出是哪一筆', ()
   assert.equal(back[0].label, '導線');
   assert.equal(back[0].mirrorPairId, list[1].id);
   assert.deepEqual(back[3].flip, true);
-  assert.throws(() => S.parseShapes([{ type: 'line', view: 'front', pts: [[0, 0]] }], V.VIEW_IDS), /第 1 筆的點數不對/);
-  assert.throws(() => S.parseShapes([{ type: 'dot', view: 'side', pts: [[0, 0]] }], V.VIEW_IDS), /視圖不認得/);
-  assert.throws(() => S.parseShapes([{ type: 'dot', view: 'top', pts: [[0, 1e9]] }], V.VIEW_IDS), /不是 \[x, y\] 數字/);
+  assert.throws(() => S.parseShapes([{ type: 'line', view: 'front', pts: [[0, 0]] }], V.VIEW_IDS), /1 番目の図形の点の数が違います/);
+  assert.throws(() => S.parseShapes([{ type: 'dot', view: 'side', pts: [[0, 0]] }], V.VIEW_IDS), /ビューが不明です/);
+  assert.throws(() => S.parseShapes([{ type: 'dot', view: 'top', pts: [[0, 1e9]] }], V.VIEW_IDS), /\[x, y\] の数値ではありません/);
 });
 
 test('幾何：曲線通過中間點、命中距離、外框', () => {
@@ -178,7 +178,7 @@ test('頭圖庫：2D 頭圖的步驟、複製、資料夾、回收桶', () => {
   assert.notEqual(d.steps[j].shapes[0].id, d.steps[0].shapes[0].id);
   assert.equal(L.stepShapes(d.steps[1]).length, 1);
   const f = L.addFolder(lib, '短髮');
-  assert.throws(() => L.addFolder(lib, '短髮'), /已經有/);
+  assert.throws(() => L.addFolder(lib, '短髮'), /すでにあります/);
   d.folder = f.id; d.star = true;
   const copy = L.duplicateDrawing(lib, d);
   assert.equal(copy.folder, f.id); assert.equal(copy.star, undefined);

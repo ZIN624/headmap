@@ -23,7 +23,7 @@ test('新的一筆：樣式照形狀整理', () => {
   assert.equal(region.style.opacity, D.FILL_OPACITY);
   assert.equal(region.bends.length, 3);
 
-  assert.throws(() => D.newLayer({ shape: 'circle', points: [A] }), /形狀不認得/);
+  assert.throws(() => D.newLayer({ shape: 'circle', points: [A] }), /不明な形/);
 });
 
 test('標字：去掉控制字元、壓掉多餘空白、限制長度', () => {
@@ -41,7 +41,7 @@ test('線拉成髮片、點變成提拉線', () => {
 
   const strand = D.convertToLift(D.newLayer({ shape: 'point', points: [A] }), 'strand');
   assert.equal(strand.arrow, true);
-  assert.throws(() => D.convertToLift(D.newLayer({ shape: 'point', points: [A] }), 'panel'), /只有線/);
+  assert.throws(() => D.convertToLift(D.newLayer({ shape: 'point', points: [A] }), 'panel'), /線だけ/);
 });
 
 test('存檔再讀回來是同一筆', () => {
@@ -56,10 +56,10 @@ test('存檔再讀回來是同一筆', () => {
 });
 
 test('讀檔：不合格的筆說得出是哪一筆', () => {
-  assert.throws(() => D.parseLayers([{ shape: 'line', points: [A] }]), /第 1 筆的點少於 2 個/);
-  assert.throws(() => D.parseLayers([{ shape: 'point', points: [A] }, { shape: 'line', points: [A, { x: 9, y: 0, z: 0 }] }]), /第 2 筆第 2 點離頭太遠/);
-  assert.throws(() => D.parseLayers([{ shape: 'point', points: [A, B] }]), /多於 1 個/);
-  assert.throws(() => D.parseLayers({}), /缺 layers/);
+  assert.throws(() => D.parseLayers([{ shape: 'line', points: [A] }]), /1 番目の線の点が 2 個未満です/);
+  assert.throws(() => D.parseLayers([{ shape: 'point', points: [A] }, { shape: 'line', points: [A, { x: 9, y: 0, z: 0 }] }]), /2 番目の線の 2 番目の点が頭から離れすぎています/);
+  assert.throws(() => D.parseLayers([{ shape: 'point', points: [A, B] }]), /1 個を超えています/);
+  assert.throws(() => D.parseLayers({}), /layers がありません/);
 });
 
 test('讀檔：顏色或線寬不對就用預設，鏡像配對的另一筆不在就解除', () => {
@@ -88,7 +88,7 @@ test('步驟：新增、複製、移動、刪除', () => {
   assert.equal(L.moveStep(d, 0, -1), 0);
   assert.equal(L.deleteStep(d, 2), 1);
   L.deleteStep(d, 1);
-  assert.throws(() => L.deleteStep(d, 0), /至少要留一個步驟/);
+  assert.throws(() => L.deleteStep(d, 0), /1つ以上残してください/);
 });
 
 test('複製步驟時鏡像配對跟著對到新的筆', () => {
@@ -106,7 +106,7 @@ test('步驟的編號、名字、前面步驟變淡', () => {
   L.addStep(d); L.addStep(d);
   d.steps[1].title = '分區';
   assert.equal(L.stepLabel(0), '01');
-  assert.equal(L.stepName(d, 0), '步驟 1');
+  assert.equal(L.stepName(d, 0), 'ステップ 1');
   assert.equal(L.stepName(d, 1), '分區');
   assert.deepEqual(L.ghostIndices(d, 2), [0]);
   assert.deepEqual(L.ghostIndices(d, 0), []);
@@ -127,7 +127,7 @@ test('匯出一張頭圖再匯入：加在後面，同 id 的另外給新 id', (
   const { added } = L.importInto(lib, L.exportDrawing(d));
   assert.equal(lib.drawings.length, 2);
   assert.notEqual(added[0].id, d.id);
-  assert.equal(added[0].title, '測試（匯入）');
+  assert.equal(added[0].title, '測試（読み込み）');
   assert.deepEqual(added[0].steps, d.steps);
 });
 
@@ -141,12 +141,12 @@ test('匯出整個頭圖庫再匯入到空的頭圖庫', () => {
 test('匯入：看不懂、太新、壞掉的檔案都擋下來，頭圖庫不變', () => {
   const { lib } = sampleLibrary();
   const before = L.serializeLibrary(lib);
-  assert.throws(() => L.importInto(lib, '{'), /不是正確的 JSON/);
-  assert.throws(() => L.importInto(lib, '{"format":"something-else"}'), /看不懂這個檔案/);
-  assert.throws(() => L.importInto(lib, JSON.stringify({ format: L.DRAWING_FORMAT, version: L.FORMAT_VERSION + 1, drawing: {} })), /比較新的版本/);
-  assert.throws(() => L.importInto(lib, JSON.stringify({ format: L.DRAWING_FORMAT, version: 1, drawing: { steps: [{ layers: [{ shape: 'line', points: [A] }] }] } })), /第 1 步的圖讀不進來/);
-  assert.throws(() => L.importInto(lib, JSON.stringify({ format: L.DRAWING_FORMAT, version: 1, drawing: { steps: [] } })), /沒有任何步驟/);
+  assert.throws(() => L.importInto(lib, '{'), /正しい JSON ではありません/);
+  assert.throws(() => L.importInto(lib, '{"format":"something-else"}'), /このファイルは読めません/);
+  assert.throws(() => L.importInto(lib, JSON.stringify({ format: L.DRAWING_FORMAT, version: L.FORMAT_VERSION + 1, drawing: {} })), /新しいバージョン/);
+  assert.throws(() => L.importInto(lib, JSON.stringify({ format: L.DRAWING_FORMAT, version: 1, drawing: { steps: [{ layers: [{ shape: 'line', points: [A] }] }] } })), /1 ステップ目の図が読み込めません/);
+  assert.throws(() => L.importInto(lib, JSON.stringify({ format: L.DRAWING_FORMAT, version: 1, drawing: { steps: [] } })), /ステップがありません/);
   const good = lib.drawings[0];
-  assert.throws(() => L.importInto(lib, JSON.stringify({ format: L.LIBRARY_FORMAT, version: 1, drawings: [good, { steps: [] }] })), /第 2 張沒有任何步驟/);
+  assert.throws(() => L.importInto(lib, JSON.stringify({ format: L.LIBRARY_FORMAT, version: 1, drawings: [good, { steps: [] }] })), /2 枚目にステップがありません/);
   assert.equal(L.serializeLibrary(lib), before);
 });

@@ -1,0 +1,59 @@
+{
+  "format": "head3d-heads",
+  "version": 1,
+  "default": "ict",
+  "default2d": "bl_f",
+  "models": [
+    {
+      "id": "mh_f",
+      "label": "頭模 1",
+      "sub": "女性・MakeHuman",
+      "glb": "mh_f.glb",
+      "meta": "mh_f.json",
+      "author": "MakeHuman／MPFB 2 社群",
+      "license": "CC0 1.0",
+      "source": "MPFB 2 基礎網格與 MakeHuman 系統素材",
+      "sourceUrl": "https://github.com/makehumancommunity/mpfb2",
+      "changes": "調整頭型、裁成胸像、標出耳殼。"
+    },
+    {
+      "id": "bl_f",
+      "label": "頭模 2",
+      "sub": "女性・寫實・Blender",
+      "glb": "bl_f.glb",
+      "meta": "bl_f.json",
+      "author": "Dan Ulrich（Blender Studio）",
+      "license": "CC0 1.0",
+      "licenseFile": "licenses/Blender_HumanBaseMeshes_LICENSE.txt",
+      "source": "Blender Human Base Meshes v1.4.1・Body Female - Realistic",
+      "sourceUrl": "https://www.blender.org/download/demo-files/",
+      "changes": "從全身模型裁出胸像、等比縮放對齊、減面、補平底面、標出耳殼。"
+    },
+    {
+      "id": "bl_m",
+      "label": "頭模 3",
+      "sub": "男性・寫實・Blender",
+      "glb": "bl_m.glb",
+      "meta": "bl_m.json",
+      "author": "Dan Ulrich（Blender Studio）",
+      "license": "CC0 1.0",
+      "licenseFile": "licenses/Blender_HumanBaseMeshes_LICENSE.txt",
+      "source": "Blender Human Base Meshes v1.4.1・Body Male - Realistic",
+      "sourceUrl": "https://www.blender.org/download/demo-files/",
+      "changes": "從全身模型裁出胸像、等比縮放對齊、減面、補平底面與手臂切口、標出耳殼。"
+    },
+    {
+      "id": "ict",
+      "label": "頭模 4",
+      "sub": "中性・ICT-FaceKit",
+      "glb": "ict.glb",
+      "meta": "ict.json",
+      "author": "USC Institute for Creative Technologies",
+      "license": "MIT",
+      "licenseFile": "licenses/ICT-FaceKit_LICENSE.txt",
+      "source": "ICT-FaceKit",
+      "sourceUrl": "https://github.com/USC-ICT/ICT-FaceKit",
+      "changes": "裁切、縮放對齊、補面、標出耳殼。"
+    }
+  ]
+}

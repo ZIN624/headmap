@@ -1,0 +1,5 @@
+three-mesh-bvh 0.9.18
+授權：MIT（全文見同資料夾的 LICENSE）
+來源：https://github.com/gkjohnson/three-mesh-bvh
+內容：只取發行套件裡的 build/index.module.js 一個檔。
+修改：第一行 import 的來源由裸名稱 three 換成相對路徑 ../three/build/three.module.js，瀏覽器與 Node 才都能直接載入；其餘內容與發行版相同。

@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>頭圖 3D</title>
+<meta name="description" content="畫剪髮圖解的網頁：在 3D 頭模上畫，或畫五個視圖的平面圖。不用安裝、不用帳號，手機電腦都能用。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="頭圖 3D">
+<meta property="og:description" content="畫剪髮圖解的網頁：在 3D 頭模上畫，或畫五個視圖的平面圖。不用安裝、不用帳號，手機電腦都能用。">
+<meta property="og:url" content="https://headmap.pages.dev/">
+<meta property="og:image" content="https://headmap.pages.dev/icons/icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta name="twitter:card" content="summary">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#B5C4CA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#2A3338" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="頭圖 3D">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/build/three.module.js", "three/addons/": "./vendor/three/examples/jsm/" } }
+</script>
+</head>
+<!-- 三個畫面：我的頭圖（首頁）→ 畫圖（一張頭圖有好幾個步驟）→ 預覽（工具收起來，只剩頭模和換步驟）。
+     body 的 data-mode 記現在是哪一個：home／draw／preview。頭模還沒載入好時，整頁蓋著「載入頭模…」。 -->
+<body data-mode="home">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-undo" viewBox="0 0 20 20"><path d="M7 5.5L3.5 9 7 12.5"/><path d="M3.5 9h8a4.5 4.5 0 0 1 0 9H9"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 20 20"><path d="M13 5.5L16.5 9 13 12.5"/><path d="M16.5 9h-8a4.5 4.5 0 0 0 0 9H11"/></symbol>
+    <symbol id="i-more" viewBox="0 0 20 20"><circle cx="4.5" cy="10" r="1.3" fill="currentColor" stroke="none"/><circle cx="10" cy="10" r="1.3" fill="currentColor" stroke="none"/><circle cx="15.5" cy="10" r="1.3" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-back" viewBox="0 0 20 20"><path d="M12.5 4.5L7 10l5.5 5.5"/></symbol>
+    <symbol id="i-next" viewBox="0 0 20 20"><path d="M7.5 4.5L13 10l-5.5 5.5"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 20 20"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z"/><circle cx="10" cy="10" r="2.6"/></symbol>
+    <symbol id="i-play" viewBox="0 0 20 20"><path d="M6.5 4.5l9 5.5-9 5.5z" fill="currentColor" stroke-linejoin="round"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 20 20"><path d="M4 16l1-4 8.5-8.5 3 3L8 15z"/><path d="M11.5 5.5l3 3"/></symbol>
+    <symbol id="i-cube" viewBox="0 0 20 20"><path d="M10 2.8l6.2 3.6v7.2L10 17.2l-6.2-3.6V6.4z"/><path d="M3.8 6.4L10 10l6.2-3.6M10 10v7.2"/></symbol>
+    <symbol id="i-recenter" viewBox="0 0 20 20"><circle cx="10" cy="10" r="5.5"/><path d="M10 2v3M10 15v3M2 10h3M15 10h3"/><circle cx="10" cy="10" r="1.4" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 20 20"><path d="M10 4v12M4 10h12"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 20 20"><path d="M6 8l4 4 4-4"/></symbol>
+    <symbol id="i-select" viewBox="0 0 20 20"><path d="M5 3.5l10 7.2-4.4.9-2.2 4.1z"/></symbol>
+    <symbol id="i-point" viewBox="0 0 20 20"><circle cx="10" cy="10" r="2.6" fill="currentColor" stroke="none"/><circle cx="10" cy="10" r="6.5" stroke-dasharray="2 2.2"/></symbol>
+    <symbol id="i-line" viewBox="0 0 20 20"><path d="M4 16L16 4"/><circle cx="4" cy="16" r="1.4" fill="currentColor" stroke="none"/><circle cx="16" cy="4" r="1.4" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-sec-h" viewBox="0 0 20 20"><path d="M3 10h14"/></symbol>
+    <symbol id="i-sec-v" viewBox="0 0 20 20"><path d="M10 3v14"/></symbol>
+    <symbol id="i-sec-f" viewBox="0 0 20 20"><path d="M4 5.5l12 9"/></symbol>
+    <symbol id="i-sec-b" viewBox="0 0 20 20"><path d="M16 5.5l-12 9"/></symbol>
+    <symbol id="i-sec-r" viewBox="0 0 20 20"><circle cx="10" cy="4.5" r="1.6" fill="currentColor" stroke="none"/><path d="M10 4.5L4 15.5M10 4.5v11.5M10 4.5l6 11"/></symbol>
+    <symbol id="i-free" viewBox="0 0 20 20"><path d="M3 14.5c2.5-6 3.6-7.8 5-5.5s1 6.5 3 4.5 2.3-6.8 3.5-5.5 1 5 2.5 5"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 20 20"><path d="M3 6h14M3 10h14M3 14h14"/></symbol>
+    <symbol id="i-text" viewBox="0 0 20 20"><path d="M4.5 6V4.5h11V6M10 4.5v11M7.5 15.5h5"/></symbol>
+    <!-- 分區樣板：從頭頂看的頭（淡圈，臉在上）＋那個樣板的分線 -->
+    <symbol id="i-tpl-center" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.2" stroke-opacity=".35"/><path d="M10 2.8v14.4"/></symbol>
+    <symbol id="i-tpl-ear" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.2" stroke-opacity=".35"/><path d="M2.8 10h14.4"/></symbol>
+    <symbol id="i-tpl-four" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.2" stroke-opacity=".35"/><path d="M10 2.8v14.4M2.8 10h14.4"/></symbol>
+    <symbol id="i-tpl-uzone" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.2" stroke-opacity=".35"/><path d="M6.2 4v7a3.8 3.8 0 0 0 7.6 0V4"/></symbol>
+    <symbol id="i-tpl-fringe" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.2" stroke-opacity=".35"/><path d="M5.6 4.3L10 9.8l4.4-5.5"/></symbol>
+    <symbol id="i-fill-tap" viewBox="0 0 20 20"><path d="M10 3v14M3 10h14" stroke-opacity=".45"/><path d="M10.6 10.6h6.2v6.2h-6.2z" fill="currentColor" fill-opacity=".3" stroke="none"/><circle cx="13.7" cy="13.7" r="1.5" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-fill-draw" viewBox="0 0 20 20"><path d="M5 6.5l9-2 2.5 8.5-8 3z" fill="currentColor" fill-opacity=".18"/><circle cx="5" cy="6.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="14" cy="4.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="16.5" cy="13" r="1.3" fill="currentColor" stroke="none"/><circle cx="8.5" cy="16" r="1.3" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-region" viewBox="0 0 20 20"><path d="M5.5 5.5C8 3 12.5 3.2 15 6s1.8 7.5-1 9.5-7.5 1-9-1.5-1.8-6 .5-8.5z" fill="currentColor" fill-opacity=".22"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 20 20"><path d="M3 6h14M3 14h14"/><circle cx="7" cy="6" r="2" fill="currentColor"/><circle cx="13" cy="14" r="2" fill="currentColor"/></symbol>
+    <symbol id="i-w1" viewBox="0 0 20 20"><path d="M3 10h14" stroke-width="1.2"/></symbol>
+    <symbol id="i-w2" viewBox="0 0 20 20"><path d="M3 10h14" stroke-width="2.6"/></symbol>
+    <symbol id="i-w3" viewBox="0 0 20 20"><path d="M3 10h14" stroke-width="4.4"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 20 20"><path d="M3 10h12"/><path d="M11 5.5l4.5 4.5-4.5 4.5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 20 20"><path d="M4 10.5l4 4 8-9"/></symbol>
+    <symbol id="i-close" viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 20 20"><path d="M4 6h12M8 6V4.2h4V6M6 6l.8 10h6.4L14 6"/></symbol>
+    <symbol id="i-flip" viewBox="0 0 20 20"><path d="M3 7h12M12 4l3 3-3 3"/><path d="M17 13H5M8 10l-3 3 3 3"/></symbol>
+    <symbol id="i-bend" viewBox="0 0 20 20"><path d="M3.5 15.5L16.5 4.5" stroke-dasharray="2 2"/><path d="M3.5 15.5C5 8 10 5 16.5 4.5"/></symbol>
+    <symbol id="i-straight" viewBox="0 0 20 20"><path d="M3.5 15.5C5 8 10 5 16.5 4.5" stroke-dasharray="2 2"/><path d="M3.5 15.5L16.5 4.5"/></symbol>
+    <symbol id="i-delpoint" viewBox="0 0 20 20"><path d="M3 14.5L10 8l7 6.5"/><circle cx="10" cy="8" r="2.6" fill="#fff"/><path d="M8.6 6.6l2.8 2.8M11.4 6.6l-2.8 2.8"/></symbol>
+    <symbol id="i-panel" viewBox="0 0 20 20"><path d="M3.5 15.5c3-1 9-1 13 0"/><path d="M4.5 15.2L6 5.5M16 15.2L14.5 5.5"/><path d="M6 5.5c3-1 5.5-1 8.5 0"/></symbol>
+    <symbol id="i-strand" viewBox="0 0 20 20"><path d="M4 16.5c3-1 8-1 12 0"/><path d="M10 16L10 4"/><path d="M7 7l3-3 3 3"/></symbol>
+    <symbol id="i-fan" viewBox="0 0 20 20"><path d="M10 16h7M10 16l6-3.5M10 16l3.5-6M10 16V9M10 16l-3.5-6M10 16l-6-3.5M10 16H3"/></symbol>
+    <!-- 放下（頭髮垂下來）、拉起（頭髮拉出去） -->
+    <symbol id="i-fall" viewBox="0 0 20 20"><path d="M4 5.5c2-2 10-2 12 0"/><path d="M6 6.5v9M10 5.5v11M14 6.5v9" stroke-width="1.3"/><path d="M8 14.5l2 2 2-2" stroke-width="1.3"/></symbol>
+    <symbol id="i-liftup" viewBox="0 0 20 20"><path d="M4 16.5c2-2 10-2 12 0"/><path d="M6 15.5L4.5 6M10 15V4M14 15.5L15.5 6" stroke-width="1.3"/><path d="M8 6l2-2 2 2" stroke-width="1.3"/></symbol>
+    <symbol id="i-structure" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14"/><path d="M4.5 6.5c3 1.4 8 1.4 11 0" stroke-dasharray="1.6 1.6"/></symbol>
+    <symbol id="i-mirror" viewBox="0 0 20 20"><path d="M10 2.5v15" stroke-dasharray="2 2"/><path d="M7.5 5.5L3 10l4.5 4.5"/><path d="M12.5 5.5L17 10l-4.5 4.5"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 20 20"><path d="M6.5 4.5v11M13.5 4.5v11" stroke-width="2.6"/></symbol>
+    <symbol id="i-replay" viewBox="0 0 20 20"><path d="M4.5 10a5.5 5.5 0 1 0 1.8-4.1"/><path d="M4 3.5v3.3h3.3"/></symbol>
+    <symbol id="i-folder-plus" viewBox="0 0 20 20"><path d="M2.5 5.5h5l1.5 2h8.5v8h-15z"/><path d="M10 10v4M8 12h4"/></symbol>
+    <symbol id="i-grid4" viewBox="0 0 20 20"><rect x="3" y="3" width="5.5" height="6" rx="1"/><rect x="11.5" y="3" width="5.5" height="6" rx="1"/><rect x="7.2" y="11" width="5.5" height="6" rx="1"/></symbol>
+    <symbol id="i-fit" viewBox="0 0 20 20"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/></symbol>
+    <symbol id="i-magnet" viewBox="0 0 20 20"><path d="M5 3.5v6a5 5 0 0 0 10 0v-6"/><path d="M5 6.5h3M12 6.5h3"/><path d="M8 3.5v6a2 2 0 0 0 4 0v-6"/></symbol>
+    <symbol id="i-magic" viewBox="0 0 20 20"><path d="M4 16l8.5-8.5M11 6l3 3"/><path d="M14.5 2.5v3M13 4h3M16.5 9.5v2.5M15.3 10.7h2.5M7 3v2M6 4h2"/></symbol>
+    <symbol id="i-dup" viewBox="0 0 20 20"><rect x="3" y="6" width="9.5" height="10.5" rx="1.5"/><path d="M7 6V4.5A1.5 1.5 0 0 1 8.5 3h7A1.5 1.5 0 0 1 17 4.5v8a1.5 1.5 0 0 1-1.5 1.5h-3"/></symbol>
+    <symbol id="i-reverse" viewBox="0 0 20 20"><path d="M3 7h12M12 4l3 3-3 3"/><path d="M17 13H5M8 10l-3 3 3 3"/></symbol>
+    <symbol id="i-fliph" viewBox="0 0 20 20"><path d="M10 2.5v15" stroke-dasharray="2 2"/><path d="M7.5 6L3 14h4.5zM12.5 6L17 14h-4.5z"/></symbol>
+    <symbol id="i-eraser" viewBox="0 0 20 20"><path d="M3.5 13.5l7.5-7.5 5 5-5 5H6.5z"/><path d="M8 9l5 5M9 16.5h8"/></symbol>
+    <symbol id="i-shapes" viewBox="0 0 20 20"><circle cx="7" cy="7.5" r="4"/><path d="M10.5 11.5h6v5.5h-6z" fill="currentColor" fill-opacity=".22"/></symbol>
+    <symbol id="i-tool-icon" viewBox="0 0 24 24"><path d="M5 4.8a2.9 2.9 0 1 0 0 5.8a2.9 2.9 0 1 0 0-5.8M5 13.4a2.9 2.9 0 1 0 0 5.8a2.9 2.9 0 1 0 0-5.8"/><path d="M7.2 13.6L11 10.8Q16.5 7.4 22 5.6L12.2 12.9L8 15.4ZM7.2 10.4L11 13.2Q16.5 16.6 22 18.4L12.2 11.1L8 8.6Z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-image" viewBox="0 0 20 20"><rect x="2.5" y="4" width="15" height="12" rx="1.5"/><circle cx="7" cy="8.2" r="1.5"/><path d="M3 14.5l4.5-4 3 2.5 3-3.5 4 4"/></symbol>
+    <symbol id="i-save" viewBox="0 0 20 20"><path d="M10 3v9.5M6 8.8l4 4 4-4M3.5 13.5v2.2c0 .6.4 1 1 1h11c.6 0 1-.4 1-1v-2.2"/></symbol>
+    <symbol id="i-search" viewBox="0 0 20 20"><circle cx="8.5" cy="8.5" r="5"/><path d="M12.3 12.3L17 17"/></symbol>
+    <!-- 小剪刀：實心刀刃＋圓圈把手＋中間的螺絲，刀尖朝 +x（畫面上會轉到朝髮尾線） -->
+    <symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="5" cy="7.8" r="2.9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="5" cy="16.2" r="2.9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6.94 13.87L10.69 10.74Q16.5 7.2 21.5 5.54L12.04 12.84L7.92 15.39Z" fill="currentColor" stroke="currentColor" stroke-width=".6" stroke-linejoin="round"/><path d="M6.94 10.13L10.69 13.26Q16.5 16.8 21.5 18.46L12.04 11.16L7.92 8.61Z" fill="currentColor" stroke="currentColor" stroke-width=".6" stroke-linejoin="round"/><circle cx="11.5" cy="12" r="1.15" style="fill: var(--sc-bg, #1B64FF); stroke: none"/></symbol>
+  </defs>
+</svg>
+
+<!-- 首頁：我的頭圖（一張一格）。上面一排：全部、收藏、資料夾、＋資料夾、回收桶；再來是搜尋與排序 -->
+<section id="home" hidden>
+  <header class="bar top home-top">
+    <h1>我的頭圖</h1>
+    <div class="grow"></div>
+    <button type="button" class="ic" id="home-new" aria-label="新增一張頭圖"><svg><use href="#i-plus"/></svg></button>
+    <button type="button" class="ic" id="home-more" aria-label="更多：匯入、匯出、說明、關於"><svg><use href="#i-more"/></svg></button>
+  </header>
+  <div class="home-tools">
+    <div class="home-boxes" id="home-boxes" role="group" aria-label="分類"></div>
+    <div class="home-find">
+      <label class="home-search"><svg aria-hidden="true"><use href="#i-search"/></svg><input id="home-search" type="search" placeholder="搜尋圖名或筆記" aria-label="搜尋" autocomplete="off"></label>
+      <div class="seg" id="home-sort" role="group" aria-label="排序"><button type="button" data-sort="updated">最近</button><button type="button" data-sort="created">建立</button><button type="button" data-sort="title">名稱</button></div>
+    </div>
+  </div>
+  <div id="home-list" class="home-list"></div>
+</section>
+
+<!-- 畫圖的頂欄：返回、標題鈕（這一步的編號與名字、圖名；點了開「這一步」）、復原、重做、眼睛、預覽 -->
+<header class="bar top" id="topbar" hidden>
+  <button type="button" class="ic" id="go-home" aria-label="回我的頭圖"><svg><use href="#i-back"/></svg></button>
+  <button type="button" class="title-btn" id="step-title" aria-label="這一步的名字、動作與全部步驟"><span class="t1" id="step-title-text"></span><span class="t2" id="drawing-title-text"></span></button>
+  <button type="button" class="ic" id="undo" aria-label="復原" disabled><svg><use href="#i-undo"/></svg></button>
+  <button type="button" class="ic" id="redo" aria-label="重做" disabled><svg><use href="#i-redo"/></svg></button>
+  <button type="button" class="ic" id="eye-btn" aria-label="要看到什麼" aria-expanded="false"><svg><use href="#i-eye"/></svg></button>
+  <button type="button" class="preview-btn" id="preview-btn"><svg><use href="#i-play"/></svg><span>預覽</span></button>
+</header>
+<!-- 預覽的頂欄：返回、圖名與第幾步、筆（回畫圖） -->
+<header class="bar top" id="previewbar" hidden>
+  <button type="button" class="ic" id="preview-home" aria-label="回我的頭圖"><svg><use href="#i-back"/></svg></button>
+  <div class="preview-title"><span id="preview-drawing"></span><span id="preview-count"></span></div>
+  <button type="button" class="ic" id="preview-save" aria-label="儲存這張照片"><svg><use href="#i-save"/></svg></button>
+  <button type="button" class="ic" id="preview-edit" aria-label="回畫圖"><svg><use href="#i-pen"/></svg></button>
+</header>
+
+<div id="workspace">
+  <main id="stage">
+    <canvas id="c"></canvas>
+    <div id="handles" aria-hidden="true"></div>
+    <svg id="cutsvg" aria-hidden="true"><path id="cutpath"/></svg>
+    <button type="button" class="float-btn" id="view-btn" aria-label="視角" aria-expanded="false"><svg><use href="#i-cube"/></svg><span id="view-label">左前</span><svg class="chev"><use href="#i-chev"/></svg></button>
+    <!-- 結構線開關：和眼睛選單裡那一顆同步 -->
+    <button type="button" class="float-btn" id="struct-btn" aria-pressed="false"><svg><use href="#i-structure"/></svg><span>結構線</span></button>
+    <!-- 放下／拉起：這一步有髮片或提拉線才出現（畫圖、預覽都有） -->
+    <button type="button" class="float-btn" id="fall-btn" aria-pressed="false" hidden><svg><use href="#i-fall"/></svg><span id="fall-text">放下</span></button>
+    <button type="button" class="float-btn" id="recenter" hidden><svg><use href="#i-recenter"/></svg><span>回到這一步的視角</span></button>
+    <div id="view-pop" class="pop" hidden>
+      <div class="vgrid" role="group" aria-label="九個視角" id="vgrid"></div>
+      <button type="button" class="sw-row" id="tgl-topdown" aria-pressed="false"><span>頂視：臉朝下</span><i class="switch"></i></button>
+    </div>
+    <div id="eye-pop" class="pop" hidden>
+      <!-- 換頭模：已經畫的圖跟著搬到新頭上相對的位置；換回原本那顆就是原樣 -->
+      <p class="pop-k">頭模（畫好的圖會跟著搬過去）</p>
+      <div class="seg eye-heads" id="eye-heads" role="group" aria-label="頭模"></div>
+      <button type="button" class="sw-row" id="tgl-outline" aria-pressed="true"><span>頭髮外輪廓</span><i class="switch"></i></button>
+      <button type="button" class="sw-row" id="tgl-structure" aria-pressed="false"><span>結構線與十五點</span><i class="switch"></i></button>
+      <button type="button" class="sw-row" id="tgl-labels" aria-pressed="false"><span>點位名稱（匯出不帶）</span><i class="switch"></i></button>
+      <button type="button" class="sw-row" id="tgl-ghost" aria-pressed="true"><span>前面步驟變淡</span><i class="switch"></i></button>
+      <button type="button" class="sw-row" id="tgl-snap" aria-pressed="true"><span>吸附點位與線端</span><i class="switch"></i></button>
+      <p class="pop-k">輪廓線樣式</p>
+      <div class="seg wrap" role="group" aria-label="輪廓線樣式">
+        <button type="button" data-ostyle="thin">細實線</button><button type="button" data-ostyle="bold">粗實線</button><button type="button" data-ostyle="dash">虛線</button><button type="button" data-ostyle="dot">點線</button>
+      </div>
+    </div>
+    <!-- 畫到一半的提示：線＝再點一下終點；自己圈的面＝已點幾點、閉合 -->
+    <div id="draftbar" hidden>
+      <span id="draft-text"></span>
+      <button type="button" id="draft-cancel" class="pill ghost" aria-label="取消"><svg><use href="#i-close"/></svg></button>
+      <button type="button" id="draft-done" class="pill primary"><svg><use href="#i-check"/></svg><span>閉合</span></button>
+    </div>
+  </main>
+  <!-- 2D 頭圖：總覽（五個視圖）或單一視圖。座標是公釐（src/flat/views.js），底圖是從頭模畫出來的線稿 -->
+  <main id="flat" hidden>
+    <div class="fl-bar">
+      <button type="button" class="fl-btn" id="fl-layout" aria-pressed="false"><svg><use href="#i-grid4"/></svg><span>總覽</span></button>
+      <div class="fl-tabs" id="fl-tabs" role="group" aria-label="視圖">
+        <button type="button" data-view="left" aria-label="左側">左</button><button type="button" data-view="right" aria-label="右側">右</button><button type="button" data-view="top" aria-label="頂視">頂</button><button type="button" data-view="front" aria-label="正面">正</button><button type="button" data-view="back" aria-label="背面">背</button>
+      </div>
+      <div class="grow"></div>
+      <button type="button" class="fl-btn ic" id="fl-snap" aria-pressed="true" aria-label="磁吸：點位、線端、頭的外框、方向"><svg><use href="#i-magnet"/></svg></button>
+      <button type="button" class="fl-btn ic" id="fl-mirror" aria-pressed="false" aria-label="鏡像：畫一邊，另一邊自動畫"><svg><use href="#i-mirror"/></svg></button>
+      <button type="button" class="fl-btn ic" id="fl-more" aria-label="這個視圖：樣板、整側鏡像、底圖、筆記" aria-expanded="false"><svg><use href="#i-more"/></svg></button>
+    </div>
+    <!-- 結構線開關（十五點跟著一起開關）：和眼睛選單裡那一顆同步（2D、3D 共用同一個設定） -->
+    <button type="button" class="float-btn" id="fl-struct" aria-pressed="false"><svg><use href="#i-structure"/></svg><span>結構線</span></button>
+    <div class="fl-grid" id="fl-grid" hidden></div>
+    <div class="fl-one" id="fl-one">
+      <svg id="fl-svg" preserveAspectRatio="xMidYMid meet" aria-label="畫圖區">
+        <g id="fl-scene"><g id="fl-bg"></g><g id="fl-below"></g><g id="fl-shapes"></g><g id="fl-live"></g></g>
+        <g id="fl-ui"></g>
+      </svg>
+      <div id="fl-loupe" hidden><svg id="fl-loupe-svg" preserveAspectRatio="xMidYMid slice"><use href="#fl-scene"/></svg></div>
+      <button type="button" class="float-btn" id="fl-fit" aria-label="回到整張"><svg><use href="#i-fit"/></svg></button>
+      <div id="fl-draftbar" class="draftbar" hidden>
+        <span id="fl-draft-text"></span>
+        <button type="button" id="fl-draft-cancel" class="pill ghost" aria-label="取消"><svg><use href="#i-close"/></svg></button>
+        <button type="button" id="fl-draft-done" class="pill primary"><svg><use href="#i-check"/></svg><span>完成</span></button>
+      </div>
+    </div>
+    <canvas id="fl-canvas" hidden></canvas>
+    <div class="fl-player" id="fl-player">
+      <button type="button" class="ic" id="fl-play" aria-label="播放"><svg><use href="#i-play"/></svg></button>
+      <button type="button" class="ic" id="fl-replay" aria-label="這一步重播"><svg><use href="#i-replay"/></svg></button>
+      <button type="button" class="fl-playall" id="fl-playall">從頭播全部</button>
+      <div class="grow"></div>
+      <span class="fl-k">速度</span>
+      <div class="seg" id="fl-speed" role="group" aria-label="速度"><button type="button" data-speed="slow">慢</button><button type="button" data-speed="normal">中</button><button type="button" data-speed="fast">快</button></div>
+    </div>
+    <div class="fl-loading"><div class="spin"></div><span>畫出五個視圖的線稿…</span></div>
+  </main>
+  <!-- 預覽：下方換步驟的一條（只有一步時不出現；在這條上左右滑也能換） -->
+  <nav id="previewnav" aria-label="換步驟" hidden>
+    <button type="button" class="ic" id="prev" aria-label="上一步"><svg><use href="#i-back"/></svg></button>
+    <div class="pn-mid"><span id="preview-step"></span><div class="dots" id="dots" aria-hidden="true"></div></div>
+    <button type="button" class="ic" id="next" aria-label="下一步"><svg><use href="#i-next"/></svg></button>
+  </nav>
+</div>
+
+<footer class="bar bottom" id="footer">
+  <!-- 步驟條：點一下換步驟，長按開「這一步」，＋＝在這一步後面加一步 -->
+  <div class="row strip" id="strip" role="tablist" aria-label="步驟"></div>
+  <!-- 選到一筆時：底欄換成選取列（和髮片設定）；按「完成」回到工具 -->
+  <div class="row" id="selbar" hidden>
+    <span class="sel-label" id="sel-label"></span>
+    <div class="grow"></div>
+    <button type="button" class="act" id="sel-flip"><svg><use href="#i-flip"/></svg><span>反轉</span></button>
+    <button type="button" class="act" id="sel-bend"><svg><use href="#i-bend"/></svg><span id="sel-bend-text">彎</span></button>
+    <button type="button" class="act" id="sel-delpoint"><svg><use href="#i-delpoint"/></svg><span>刪點</span></button>
+    <button type="button" class="act" id="sel-panel" hidden><svg><use href="#i-panel"/></svg><span>拉成髮片</span></button>
+    <button type="button" class="act" id="sel-repeat" hidden aria-expanded="false"><svg><use href="#i-repeat"/></svg><span>平行</span></button>
+    <button type="button" class="act" id="sel-label-btn" aria-expanded="false"><svg><use href="#i-text"/></svg><span>標字</span></button>
+    <button type="button" class="act" id="sel-strand" hidden><svg><use href="#i-strand"/></svg><span>提拉線</span></button>
+    <button type="button" class="act" id="sel-fan" hidden><svg><use href="#i-fan"/></svg><span>角度扇形</span></button>
+    <button type="button" class="act" id="sel-more" hidden aria-expanded="false"><svg><use href="#i-sliders"/></svg><span>更多</span></button>
+    <button type="button" class="act danger" id="sel-delete"><svg><use href="#i-trash"/></svg><span>刪除</span></button>
+    <button type="button" class="act done" id="sel-close" aria-label="完成，取消選取"><svg><use href="#i-check"/></svg><span>完成</span></button>
+  </div>
+  <!-- 髮片／提拉線／扇形的設定：提拉常用值、角度、導線、髮長；轉向、基準、畫法、髮束數、切口收在「更多」。
+       data-for＝哪幾種形狀有這一列；data-elev＝選了固定方向就收起來的列 -->
+  <div id="liftcard" hidden>
+    <div class="lrow" data-for="panel strand"><span class="lk">提拉</span><div class="seg" id="lift-preset" role="group" aria-label="提拉常用值"><button type="button" data-preset="fall">垂落</button><button type="button" data-preset="low">45°</button><button type="button" data-preset="scalp">頭皮 90°</button><button type="button" data-preset="fixed">固定方向</button></div></div>
+    <!-- 固定方向：整片都朝同一個方向拉，不跟頭皮的弧度走。選了「固定方向」才出現 -->
+    <div class="lrow" id="lift-fixed-row" hidden><span class="lk">方向</span><div class="seg" id="lift-fixed" role="group" aria-label="固定方向"><button type="button" data-fixed="UP">朝上</button><button type="button" data-fixed="BACK">正後</button><button type="button" data-fixed="SIDE">正側</button><button type="button" data-fixed="FRONT">正前</button></div></div>
+    <div class="lrow" data-for="panel strand" data-elev><span class="lk">角度</span><input type="range" id="lift-elev" min="0" max="180" step="5" aria-label="提拉角度"><span class="lv" id="lift-elev-v">90°</span></div>
+    <!-- 導線：自己設定＝照上面的提拉角度；跟前一片＝角度、髮長、切口照這一步的前一片髮片 -->
+    <div class="lrow" data-for="panel"><span class="lk">導線</span><div class="seg" id="lift-guide" role="group" aria-label="導線"><button type="button" data-guide="own">自己設定</button><button type="button" data-guide="follow">跟前一片</button></div></div>
+    <div class="lrow"><span class="lk">髮長</span><div class="stepper"><button type="button" id="lift-len-dec" aria-label="髮長減少">−</button><span class="lv" id="lift-len-v">8 cm</span><button type="button" id="lift-len-inc" aria-label="髮長增加">＋</button></div></div>
+    <div class="lrow more" data-for="panel strand"><span class="lk">轉向</span><input type="range" id="lift-swivel" min="-80" max="80" step="5" aria-label="轉向：髮尾線橫移的角度，正值朝臉前"><span class="lv" id="lift-swivel-v">0°</span></div>
+    <div class="lrow more" data-for="panel strand fan" data-elev><span class="lk">基準</span><div class="seg" id="lift-ref" role="group" aria-label="角度基準"><button type="button" data-ref="CENTER">髮片中心</button><button type="button" data-ref="WORLD">垂直向下</button></div></div>
+    <div class="lrow more" data-for="panel"><span class="lk">畫法</span><div class="seg" id="lift-style" role="group" aria-label="畫法"><button type="button" data-style="ARROWS">箭頭</button><button type="button" data-style="OUTLINE">外框</button><button type="button" data-style="STRANDS">髮束</button><button type="button" data-style="TINT">色面</button><button type="button" data-style="RIBBONS">色帶</button><button type="button" data-style="BLOCK">色塊</button></div></div>
+    <div class="lrow more" data-for="panel"><span class="lk">髮束數</span><div class="stepper"><button type="button" id="lift-n-dec" aria-label="髮束數減少">−</button><span class="lv" id="lift-n-v">3</span><button type="button" id="lift-n-inc" aria-label="髮束數增加">＋</button></div></div>
+    <div class="lrow more" id="lift-cut-row" data-for="panel" hidden><span class="lk">切口</span><div class="seg" role="group" aria-label="切口"><button type="button" id="lift-cut-reset">還原成沒剪</button></div></div>
+  </div>
+  <!-- 跟著工具換的選項：線的形狀、面的分區樣板、鏡像 -->
+  <div class="row opts" id="optrow">
+    <!-- 線的形狀：中間五顆是分線，畫出來的線照「一片平面切頭皮」走（照地面算，不是照螢幕） -->
+    <div class="seg" id="line-shape" role="group" aria-label="線的形狀"><button type="button" data-lshape="two"><svg><use href="#i-line"/></svg><span>兩點</span></button><button type="button" data-lshape="h"><svg><use href="#i-sec-h"/></svg><span>水平</span></button><button type="button" data-lshape="v"><svg><use href="#i-sec-v"/></svg><span>垂直</span></button><button type="button" data-lshape="f"><svg><use href="#i-sec-f"/></svg><span>前斜</span></button><button type="button" data-lshape="b"><svg><use href="#i-sec-b"/></svg><span>後斜</span></button><button type="button" data-lshape="r"><svg><use href="#i-sec-r"/></svg><span>放射</span></button><button type="button" data-lshape="free"><svg><use href="#i-free"/></svg><span>手畫</span></button></div>
+    <!-- 分區樣板：「面」工具的第一列。按一下就照頭模的點位畫出分線（一般的線，可以再選取微調） -->
+    <div class="seg" id="tpl-kind" role="group" aria-label="分區樣板" hidden><button type="button" data-tpl="center"><svg><use href="#i-tpl-center"/></svg><span>正中線</span></button><button type="button" data-tpl="ear"><svg><use href="#i-tpl-ear"/></svg><span>耳到耳</span></button><button type="button" data-tpl="four"><svg><use href="#i-tpl-four"/></svg><span>四區</span></button><button type="button" data-tpl="uzone"><svg><use href="#i-tpl-uzone"/></svg><span>U型區</span></button><button type="button" data-tpl="fringe"><svg><use href="#i-tpl-fringe"/></svg><span>瀏海三角</span></button></div>
+    <div class="grow"></div>
+    <button type="button" class="chip tglchip" id="tgl-mirror" aria-pressed="false"><svg><use href="#i-mirror"/></svg><span>鏡像</span></button>
+  </div>
+  <!-- 「面」工具的第二列：點一下填滿＝點在線圍起來的地方就填滿；自己圈＝在頭上點幾下、按閉合 -->
+  <div class="row opts" id="fillrow" hidden><div class="seg" role="group" aria-label="怎麼做一塊面"><button type="button" data-rmode="fill"><svg><use href="#i-fill-tap"/></svg><span>點一下填滿</span></button><button type="button" data-rmode="draw"><svg><use href="#i-fill-draw"/></svg><span>自己圈</span></button></div></div>
+  <!-- 「面」工具下面一行白話（樣板是什麼、現在這個做法怎麼用） -->
+  <p class="row tip" id="tpl-tip" hidden></p>
+  <!-- 選了水平／垂直／前斜／後斜／放射時，下面一行白話說這是什麼線、怎麼畫；放射多一顆「換樞軸」 -->
+  <div class="row tip linetip" id="line-tip" hidden><span id="line-tip-text"></span><button type="button" class="chip tglchip" id="pivot-btn" aria-pressed="false" hidden><span id="pivot-btn-text">換樞軸</span></button></div>
+  <!-- 樣式列：實線／虛線（只有線類有），⋯ 裡是粗細、終點箭頭、顏色 -->
+  <div class="row styles" id="stylerow">
+    <span class="rk">樣式</span>
+    <div id="style-chips">
+      <button type="button" class="chip" data-dash="0"><i class="mk"></i><span>實線</span></button>
+      <button type="button" class="chip" data-dash="1"><i class="mk dash"></i><span>虛線</span></button>
+    </div>
+    <div class="grow"></div>
+    <button type="button" class="chip more" id="style-more" aria-label="粗細、箭頭與顏色" aria-expanded="false"><svg><use href="#i-more"/></svg></button>
+  </div>
+  <div class="row tools" id="tools">
+    <button type="button" data-tool="select"><svg><use href="#i-select"/></svg><span>選取</span></button>
+    <button type="button" data-tool="point"><svg><use href="#i-point"/></svg><span>點</span></button>
+    <button type="button" data-tool="line"><svg><use href="#i-line"/></svg><span>線</span></button>
+    <button type="button" data-tool="region"><svg><use href="#i-region"/></svg><span>面</span></button>
+    <button type="button" data-tool="panel"><svg><use href="#i-panel"/></svg><span>髮片</span></button>
+  </div>
+  <!-- 2D 頭圖的底欄：選取列、工具的選項、樣式、工具 -->
+  <div id="tools2d">
+    <div class="row fl-selbar" id="fl-selbar" hidden>
+      <span class="sel-label" id="fl-sel-label"></span>
+      <div class="grow"></div>
+      <button type="button" class="act" id="fl-sel-edit" hidden><svg><use href="#i-text"/></svg><span>改字</span></button>
+      <button type="button" class="act" id="fl-sel-dup"><svg><use href="#i-dup"/></svg><span>複製</span></button>
+      <button type="button" class="act" id="fl-sel-reverse"><svg><use href="#i-reverse"/></svg><span>反向</span></button>
+      <button type="button" class="act" id="fl-sel-flip"><svg><use href="#i-fliph"/></svg><span>翻轉</span></button>
+      <button type="button" class="act" id="fl-sel-label-btn" aria-expanded="false"><svg><use href="#i-text"/></svg><span>標字</span></button>
+      <button type="button" class="act" id="fl-sel-more" aria-expanded="false"><svg><use href="#i-more"/></svg><span>更多</span></button>
+      <button type="button" class="act danger" id="fl-sel-delete"><svg><use href="#i-trash"/></svg><span>刪除</span></button>
+      <button type="button" class="act done" id="fl-sel-close" aria-label="完成，取消選取"><svg><use href="#i-check"/></svg><span>完成</span></button>
+    </div>
+    <div class="row opts fl-optrow" id="fl-optrow">
+      <div class="seg fl-variants" id="fl-variants" role="group" aria-label="工具的選項"></div>
+      <div class="grow"></div>
+      <button type="button" class="chip" id="fl-magic" aria-label="完善線條：線端接起來、延長到頭的外框"><svg><use href="#i-magic"/></svg><span>完善</span></button>
+    </div>
+    <p class="row tip" id="fl-tip"></p>
+    <div class="row styles fl-stylerow" id="fl-stylerow">
+      <button type="button" class="chip fl-color" id="fl-color-btn" aria-label="顏色、線端、透明度" aria-expanded="false"><i class="dotc"></i><svg class="chev"><use href="#i-chev"/></svg></button>
+      <div class="seg mini" id="fl-dash" role="group" aria-label="實線或虛線"><button type="button" data-dash="solid" aria-label="實線"><i class="mk"></i></button><button type="button" data-dash="dash" aria-label="虛線"><i class="mk dash"></i></button><button type="button" data-dash="dot" aria-label="點線"><i class="mk dot"></i></button></div>
+      <div class="seg mini" id="fl-width" role="group" aria-label="粗細"><button type="button" data-w="0.5" aria-label="最細"><i class="wb" style="--w:1px"></i></button><button type="button" data-w="0.9" aria-label="細"><i class="wb" style="--w:2px"></i></button><button type="button" data-w="1.4" aria-label="中"><i class="wb" style="--w:3px"></i></button><button type="button" data-w="2.2" aria-label="粗"><i class="wb" style="--w:4.5px"></i></button><button type="button" data-w="3.2" aria-label="最粗"><i class="wb" style="--w:6px"></i></button></div>
+      <div class="stepper mini" id="fl-size" hidden><button type="button" id="fl-size-dec" aria-label="小一點">−</button><span class="lv" id="fl-size-v"></span><button type="button" id="fl-size-inc" aria-label="大一點">＋</button></div>
+    </div>
+    <div class="row tools fl-tools" id="fl-tools">
+      <button type="button" data-ftool="select"><svg><use href="#i-select"/></svg><span>選取</span></button>
+      <button type="button" data-ftool="line"><svg><use href="#i-line"/></svg><span>線</span></button>
+      <button type="button" data-ftool="free"><svg><use href="#i-free"/></svg><span>手畫</span></button>
+      <button type="button" data-ftool="dot"><svg><use href="#i-point"/></svg><span>點</span></button>
+      <button type="button" data-ftool="shape"><svg><use href="#i-shapes"/></svg><span>形狀</span></button>
+      <button type="button" data-ftool="text"><svg><use href="#i-text"/></svg><span>文字</span></button>
+      <button type="button" data-ftool="icon"><svg viewBox="0 0 24 24"><use href="#i-tool-icon"/></svg><span>圖示</span></button>
+      <button type="button" data-ftool="erase"><svg><use href="#i-eraser"/></svg><span>擦</span></button>
+    </div>
+  </div>
+</footer>
+
+<!-- 2D：顏色、線端、透明度 -->
+<div id="fl-style-pop" class="pop bottom-pop" hidden>
+  <p class="pop-k">顏色</p>
+  <div class="swatches" id="fl-swatches" role="group" aria-label="顏色"></div>
+  <div id="fl-ends">
+    <p class="pop-k">線的起點／終點</p>
+    <div class="lrow"><span class="lk">起點</span><div class="seg" id="fl-end-a" role="group" aria-label="起點"><button type="button" data-end="none">無</button><button type="button" data-end="arrow">箭頭</button><button type="button" data-end="dot">圓點</button><button type="button" data-end="bar">短橫</button></div></div>
+    <div class="lrow"><span class="lk">終點</span><div class="seg" id="fl-end-b" role="group" aria-label="終點"><button type="button" data-end="none">無</button><button type="button" data-end="arrow">箭頭</button><button type="button" data-end="dot">圓點</button><button type="button" data-end="bar">短橫</button></div></div>
+  </div>
+  <div class="lrow" id="fl-opacity-row"><span class="lk">填色濃淡</span><input type="range" id="fl-opacity" min="10" max="100" step="5" aria-label="填色濃淡"><span class="lv" id="fl-opacity-v"></span></div>
+  <button type="button" class="sw-row" id="fl-fill-row" aria-pressed="false" hidden><span>圓裡面填色</span><i class="switch"></i></button>
+</div>
+<!-- 2D：文字 -->
+<div id="fl-text-pop" class="pop bottom-pop" hidden>
+  <p class="pop-k">文字（Enter 完成；Shift＋Enter 換行）</p>
+  <textarea id="fl-text-input" rows="2" maxlength="200" placeholder="例如：0° 導線、13mm、往前拉" aria-label="文字"></textarea>
+  <div class="label-row">
+    <button type="button" class="chip tglchip" id="fl-text-bold" aria-pressed="false"><b>粗體</b></button>
+    <button type="button" class="chip tglchip" id="fl-text-box" aria-pressed="false"><span>白底框</span></button>
+    <div class="grow"></div>
+    <button type="button" class="label-clear" id="fl-text-cancel">取消</button>
+    <button type="button" class="pop-go" id="fl-text-done">完成</button>
+  </div>
+</div>
+<!-- 2D：標字 -->
+<div id="fl-label-pop" class="pop bottom-pop" hidden>
+  <p class="pop-k">標字：寫在這一筆旁邊（最多 24 個字）</p>
+  <div class="label-row"><input id="fl-label-input" maxlength="24" placeholder="例如：導線、13mm、往後拉" aria-label="標字" autocomplete="off" enterkeyhint="done"><button type="button" class="pop-go" id="fl-label-done">完成</button></div>
+  <div class="label-chips" id="fl-label-chips" role="group" aria-label="常用詞">
+    <button type="button" data-word="導線">導線</button><button type="button" data-word="剪線">剪線</button><button type="button" data-word="分區">分區</button><button type="button" data-word="往前拉">往前拉</button><button type="button" data-word="往後拉">往後拉</button><button type="button" data-word="去角">去角</button><button type="button" data-word="重量">重量</button><button type="button" data-word="0°">0°</button><button type="button" data-word="45°">45°</button><button type="button" data-word="90°">90°</button>
+  </div>
+  <button type="button" class="label-clear" id="fl-label-clear">拿掉字</button>
+</div>
+<!-- 2D：選到一筆的「更多」 -->
+<div id="fl-selmore-pop" class="pop bottom-pop" hidden>
+  <div class="pop-grid">
+    <button type="button" id="fl-sm-flipv">上下翻</button>
+    <button type="button" id="fl-sm-rotb">逆轉 15°</button>
+    <button type="button" id="fl-sm-rot">順轉 15°</button>
+    <button type="button" id="fl-sm-styleall">這個視圖同類都用這個樣式</button>
+    <button type="button" id="fl-sm-front">移到最上層</button>
+    <button type="button" id="fl-sm-back">移到最下層</button>
+    <button type="button" id="fl-sm-tostep">移到下一步</button>
+    <button type="button" id="fl-sel-unpair" hidden>解開鏡像</button>
+  </div>
+</div>
+<!-- 2D：要看到什麼 -->
+<div id="fl-eye-pop" class="pop" hidden>
+  <button type="button" class="sw-row" id="fl-tgl-hairline" aria-pressed="true"><span>髮際線（虛線）</span><i class="switch"></i></button>
+  <button type="button" class="sw-row" id="fl-tgl-names" aria-pressed="false"><span>點位名稱（結構線開著才有，輸出不帶）</span><i class="switch"></i></button>
+  <button type="button" class="sw-row" id="fl-tgl-structure" aria-pressed="false"><span>結構線與十五點</span><i class="switch"></i></button>
+  <button type="button" class="sw-row" id="fl-tgl-shade" aria-pressed="false"><span>淡淡的立體明暗</span><i class="switch"></i></button>
+  <button type="button" class="sw-row" id="fl-tgl-ghost" aria-pressed="true"><span>前面步驟變淡</span><i class="switch"></i></button>
+  <button type="button" class="sw-row" id="fl-tgl-guides" aria-pressed="true"><span>對齊輔助線</span><i class="switch"></i></button>
+  <button type="button" class="sw-row" id="fl-tgl-magnifier" aria-pressed="true"><span>手指按著時的放大鏡</span><i class="switch"></i></button>
+  <p class="pop-k">紙的背景</p>
+  <div class="seg" id="fl-grid-seg" role="group" aria-label="紙的背景"><button type="button" data-grid="none">白紙</button><button type="button" data-grid="grid">方格</button><button type="button" data-grid="dots">點陣</button></div>
+</div>
+<!-- 2D：這個視圖的 ⋯ -->
+<div id="fl-view-pop" class="pop" hidden>
+  <p class="pop-k"><span id="fl-vp-title"></span>：分區樣板（照頭模的點位畫）</p>
+  <div class="tpl-grid">
+    <button type="button" data-tpl="center"><svg><use href="#i-tpl-center"/></svg><span>正中線</span></button>
+    <button type="button" data-tpl="ear"><svg><use href="#i-tpl-ear"/></svg><span>耳到耳</span></button>
+    <button type="button" data-tpl="four"><svg><use href="#i-tpl-four"/></svg><span>四區</span></button>
+    <button type="button" data-tpl="uzone"><svg><use href="#i-tpl-uzone"/></svg><span>U型區</span></button>
+    <button type="button" data-tpl="fringe"><svg><use href="#i-tpl-fringe"/></svg><span>瀏海三角</span></button>
+  </div>
+  <button type="button" class="sw-row" id="fl-tpl-all" aria-pressed="false"><span>五個視圖一起畫</span><i class="switch"></i></button>
+  <p class="pop-k">整側鏡像（另一邊原本的筆會換掉）</p>
+  <div class="seg"><button type="button" id="fl-ms-a"></button><button type="button" id="fl-ms-b"></button></div>
+  <p class="pop-k">底圖</p>
+  <div class="seg"><button type="button" id="fl-back-pick"><svg><use href="#i-image"/></svg>換成自己的照片</button><button type="button" id="fl-back-clear" hidden>換回線稿</button></div>
+  <p class="pop-k">這個視圖的筆記</p>
+  <textarea id="fl-vnote" rows="3" maxlength="4000" placeholder="例如：這一區提拉 90°、剪 1 cm" aria-label="這個視圖的筆記"></textarea>
+  <div class="seg"><button type="button" id="fl-view-png">下載這個視圖 PNG</button><button type="button" id="fl-view-clear" class="danger">清掉這個視圖</button></div>
+</div>
+
+<!-- 標字：選到的這一筆旁邊寫一小段字（導線、13mm、45°…），空白＝不要字 -->
+<div id="label-pop" class="pop bottom-pop" hidden>
+  <p class="pop-k">標字：寫在這一筆旁邊（最多 24 個字）</p>
+  <div class="label-row"><input id="label-input" maxlength="24" placeholder="例如：導線、13mm、往後拉" aria-label="標字" autocomplete="off" enterkeyhint="done"><button type="button" class="pop-go" id="label-done">完成</button></div>
+  <div class="label-chips" id="label-chips" role="group" aria-label="常用詞">
+    <button type="button" data-word="導線">導線</button><button type="button" data-word="剪線">剪線</button><button type="button" data-word="垂直拉出">垂直拉出</button><button type="button" data-word="往前拉">往前拉</button><button type="button" data-word="往後拉">往後拉</button><button type="button" data-word="去角">去角</button><button type="button" data-word="重量">重量</button><button type="button" data-word="0°">0°</button><button type="button" data-word="45°">45°</button><button type="button" data-word="90°">90°</button>
+  </div>
+  <button type="button" class="label-clear" id="label-clear">拿掉字</button>
+</div>
+
+<!-- 平行重複：選到水平／垂直／前斜／後斜的線，按「平行」。間隔沿頭皮量（在這條線的中點量）；新線和這條一樣長，碰到外輪廓就停 -->
+<div id="repeat-pop" class="pop bottom-pop" hidden>
+  <p class="pop-k">平行重複：照這條線再畫幾條（間隔沿頭皮量）</p>
+  <div class="lrow"><span class="lk">幾條</span><div class="stepper"><button type="button" id="rep-count-dec" aria-label="少一條">−</button><span class="lv" id="rep-count-v">3 條</span><button type="button" id="rep-count-inc" aria-label="多一條">＋</button></div></div>
+  <div class="lrow"><span class="lk">間隔</span><div class="stepper"><button type="button" id="rep-gap-dec" aria-label="間隔減少">−</button><span class="lv" id="rep-gap-v">1.5 cm</span><button type="button" id="rep-gap-inc" aria-label="間隔增加">＋</button></div></div>
+  <div class="lrow"><span class="lk">往哪邊</span><div class="seg" role="group" aria-label="往哪一邊重複"><button type="button" id="rep-dir-pos">往上</button><button type="button" id="rep-dir-neg">往下</button></div></div>
+  <button type="button" class="pop-go" id="rep-go">畫出來</button>
+  <div class="lrow" id="rep-deg-row" hidden><span class="lk">這條的斜度</span><div class="stepper"><button type="button" id="rep-deg-dec" aria-label="斜度減少">−</button><span class="lv" id="rep-deg-v">45°</span><button type="button" id="rep-deg-inc" aria-label="斜度增加">＋</button></div></div>
+</div>
+
+<!-- 樣式列的 ⋯：粗細、終點箭頭、顏色 -->
+<div id="style-pop" class="pop bottom-pop" hidden>
+  <p class="pop-k">粗細與終點箭頭</p>
+  <div class="style-row">
+    <div class="seg" role="group" aria-label="粗細"><button type="button" data-width="2" aria-label="細"><svg><use href="#i-w1"/></svg></button><button type="button" data-width="3.5" aria-label="中"><svg><use href="#i-w2"/></svg></button><button type="button" data-width="5.5" aria-label="粗"><svg><use href="#i-w3"/></svg></button></div>
+    <button type="button" id="tgl-arrow" aria-label="終點箭頭" aria-pressed="false"><svg><use href="#i-arrow"/></svg></button>
+  </div>
+  <p class="pop-k">顏色</p>
+  <div class="swatches" role="group" aria-label="顏色">
+    <button type="button" class="sw" data-color="#1B1B1B" aria-label="黑" style="--sw:#1B1B1B"></button>
+    <button type="button" class="sw" data-color="#236B91" aria-label="深藍" style="--sw:#236B91"></button>
+    <button type="button" class="sw" data-color="#0C8F91" aria-label="青" style="--sw:#0C8F91"></button>
+    <button type="button" class="sw" data-color="#D86735" aria-label="橘" style="--sw:#D86735"></button>
+    <button type="button" class="sw" data-color="#1B64FF" aria-label="藍" style="--sw:#1B64FF"></button>
+    <button type="button" class="sw" data-color="#C63B32" aria-label="紅" style="--sw:#C63B32"></button>
+    <!-- 自訂顏色：選色器本身蓋在「＋」上面，讓手指直接按到它（手機不讓程式代按藏起來的選色器） -->
+    <label class="sw custom" id="sw-custom" style="--sw:#7A8089"><svg aria-hidden="true"><use href="#i-plus"/></svg><input type="color" id="color-input" value="#7A8089" aria-label="自訂顏色"></label>
+  </div>
+</div>
+
+<!-- 這一步：圖名、這一步的名字、動作、全部步驟 -->
+<dialog id="stepsheet">
+  <div class="sheet">
+    <div class="sheet-head"><h2 id="ss-drawing"></h2><button type="button" class="ic" id="ss-close" aria-label="關閉"><svg><use href="#i-close"/></svg></button></div>
+    <label class="fld"><span>圖名</span><input id="ss-drawing-title" maxlength="40"></label>
+    <button type="button" class="ss-head" id="ss-head"><b id="ss-kind"></b><span></span><em>換頭模</em></button>
+    <h3>這一步 <span class="tag" id="ss-tag"></span></h3>
+    <label class="fld"><span>名稱</span><input id="ss-title" maxlength="40"></label>
+    <div class="ss-actions">
+      <button type="button" id="ss-add"><svg><use href="#i-plus"/></svg>在後面加一步</button>
+      <button type="button" id="ss-dup">複製這一步（含圖）</button>
+      <button type="button" id="ss-up">往前移</button>
+      <button type="button" id="ss-down">往後移</button>
+      <button type="button" id="ss-clear">清除這一步的圖</button>
+      <button type="button" id="ss-del" class="danger">刪除這一步</button>
+    </div>
+    <h3>輸出</h3>
+    <div class="ss-actions">
+      <button type="button" id="ss-png" data-k3>下載 PNG</button>
+      <button type="button" id="ss-share-png" data-k3 hidden>分享 PNG</button>
+      <button type="button" data-out="png-view" data-k2>這個視圖 PNG</button>
+      <button type="button" data-out="png-sheet" data-k2>五視圖總表 PNG</button>
+      <button type="button" data-out="pdf" data-k2>PDF（總表、各視圖、筆記、照片）</button>
+      <button type="button" data-out="video" data-k2>動畫影片</button>
+      <button type="button" data-out="carousel" data-k2>社群輪播圖（ZIP）</button>
+      <button type="button" id="ss-export">匯出這張頭圖 JSON</button>
+    </div>
+    <h3>筆記</h3>
+    <textarea id="ss-note" rows="3" maxlength="4000" placeholder="整張頭圖的筆記：髮型、長度、注意的地方" aria-label="整張頭圖的筆記"></textarea>
+    <h3>照片 <span class="tag" id="ss-photo-count"></span></h3>
+    <div class="ss-photos"><div id="ss-photos" class="ph-row"></div><button type="button" id="ss-photo-add" class="ph-add" aria-label="加照片"><svg><use href="#i-plus"/></svg></button></div>
+    <h3>全部步驟</h3>
+    <ol class="ss-list" id="ss-list"></ol>
+    <div class="ss-actions">
+      <button type="button" id="ss-dup-drawing">複製整張頭圖</button>
+      <button type="button" id="ss-del-drawing" class="danger">移到回收桶</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- 新增一張頭圖：名字（可以不填），按 3D 或 2D 就直接開始畫。頭模都用預設那顆（頭模 4）；3D 進去後可以在眼睛選單換 -->
+<dialog id="newsheet">
+  <div class="sheet">
+    <div class="sheet-head"><h2>新增頭圖</h2><button type="button" class="ic" id="ns-close" aria-label="關閉"><svg><use href="#i-close"/></svg></button></div>
+    <label class="fld"><span>圖名</span><input id="ns-title" maxlength="40" placeholder="未命名頭圖" autocomplete="off"></label>
+    <div class="kind-pick" id="ns-kind" role="group" aria-label="開始畫">
+      <button type="button" data-kind="3d"><svg><use href="#i-cube"/></svg><b>3D 頭模</b><span>畫在頭上，可以轉到任何角度。右上角的眼睛可以換頭模。</span></button>
+      <button type="button" data-kind="2d"><svg><use href="#i-grid4"/></svg><b>2D 五視圖</b><span>左、右、頂、正、背五張平面圖。</span></button>
+    </div>
+  </div>
+</dialog>
+<!-- 預覽：儲存這張照片（先給看要存的圖；手機按「存到手機」開分享選單選「儲存影像」，或長按圖片） -->
+<dialog id="savesheet">
+  <div class="sheet">
+    <div class="sheet-head"><h2>儲存照片</h2><button type="button" class="ic" id="sv-close" aria-label="關閉"><svg><use href="#i-close"/></svg></button></div>
+    <div class="sv-frame"><img id="sv-img" alt="要儲存的照片"></div>
+    <p class="muted" id="sv-tip"></p>
+    <div class="sv-actions">
+      <button type="button" class="primary-btn" id="sv-share" hidden>存到手機（分享選單選「儲存影像」）</button>
+      <button type="button" id="sv-download">下載圖檔（PNG）</button>
+    </div>
+  </div>
+</dialog>
+<!-- 一張頭圖的動作（首頁的 ⋯） -->
+<dialog id="itemsheet">
+  <div class="sheet">
+    <div class="sheet-head"><h2 id="is-title"></h2><button type="button" class="ic" id="is-close" aria-label="關閉"><svg><use href="#i-close"/></svg></button></div>
+    <p class="muted" id="is-sub"></p>
+    <button type="button" id="is-open" data-live>打開</button>
+    <button type="button" id="is-rename" data-live>改名</button>
+    <button type="button" id="is-star" data-live></button>
+    <label class="fld wide" data-live><span>資料夾</span><select id="is-folder" aria-label="移到資料夾"></select></label>
+    <button type="button" id="is-dup" data-live>複製一份</button>
+    <button type="button" id="is-export" data-live>匯出 JSON（含照片）</button>
+    <button type="button" id="is-trash" class="danger" data-live>移到回收桶</button>
+    <button type="button" id="is-restore" data-trash>還原</button>
+    <button type="button" id="is-purge" class="danger" data-trash>永久刪除</button>
+  </div>
+</dialog>
+<!-- 換頭模（已經畫的圖跟著搬到新頭上相對的位置；換回原本那顆就是原樣） -->
+<dialog id="headsheet">
+  <div class="sheet">
+    <div class="sheet-head"><h2>換頭模</h2><button type="button" class="ic" id="hd-close" aria-label="關閉"><svg><use href="#i-close"/></svg></button></div>
+    <p class="muted">已經畫的圖會跟著搬到新頭上相對的位置；換回原本那顆就是原樣。</p>
+    <div class="head-list" id="hd-list" role="group" aria-label="頭模"></div>
+  </div>
+</dialog>
+<!-- 看一張照片 -->
+<dialog id="photosheet" class="photo-dialog">
+  <img id="ph-img" alt="照片">
+  <div class="ph-bar"><button type="button" id="ph-del" class="danger">拿掉這張</button><button type="button" id="ph-close">關閉</button></div>
+</dialog>
+<!-- 說明：怎麼畫、怎麼看 -->
+<dialog id="helpsheet">
+  <div class="sheet help">
+    <div class="sheet-head"><h2>說明</h2><button type="button" class="ic" id="help-close" aria-label="關閉"><svg><use href="#i-close"/></svg></button></div>
+    <h3>兩種頭圖</h3>
+    <p><b>3D 頭模</b>：直接畫在頭上，可以轉到任何角度。<b>2D 五視圖</b>：左側、右側、頂視、正面、背面五張平面圖，底圖固定用頭模 2 畫出來。兩種都可以有好幾個步驟。3D 新增時用頭模 4，要換頭模，按右上角的眼睛選（已經畫的圖會跟著搬過去）。</p>
+    <h3>2D 怎麼畫</h3>
+    <ul>
+      <li>總覽點一個視圖進去畫；上面的「左 右 頂 正 背」換視圖。兩指縮放、移動；電腦用滾輪縮放、右鍵拖移動。</li>
+      <li>線：直線、箭頭、曲線（先拖直線，再拖中間的方塊彎起來）、曲線箭頭、折線。接近水平、垂直、45° 會自動轉正。</li>
+      <li>磁吸：線端會吸到十五點、別的線端、頭的外框；同一排的線端會出現藍色輔助線。</li>
+      <li>鏡像：對稱的視圖畫一邊另一邊自動畫；左側畫的會自動畫到右側。之後改一邊，另一邊跟著改。</li>
+      <li>完善線條：線端很近的接起來，靠近頭的外框或別的線的延長到剛好碰到。</li>
+      <li>⋯ 選單：分區樣板（正中線、耳到耳、四區、U型區、瀏海三角）、整側鏡像、換成自己的照片當底圖、這個視圖的筆記。</li>
+      <li>選取一筆：拖本體移動、拖圓點改端點、拖方塊改彎度或大小、拖圓圈旋轉。鍵盤：方向鍵微調、Ctrl＋D 複製、Delete 刪除。</li>
+    </ul>
+    <h3>常見的畫法</h3>
+    <ul>
+      <li>實線：分區、工作範圍。細線：分片。</li>
+      <li>箭頭：拉的方向；往上斜的箭頭＝提拉。</li>
+      <li>虛線：剪線、修剪的形狀。</li>
+      <li>點：不偏移的位置。工具圖示：用哪一種剪法。</li>
+    </ul>
+    <h3>預覽與輸出</h3>
+    <p>預覽會一筆一筆畫出來（平行的線同時畫）；可以選速度、從頭播全部。預覽右上角的下載鈕可以把看到的畫面存成照片。其他輸出在標題的選單裡：PNG、五視圖總表、PDF、動畫影片、社群輪播圖、JSON。</p>
+    <h3>圖存在哪裡</h3>
+    <p>圖存在這個瀏覽器裡（照片另外存在瀏覽器的資料庫），不會傳到任何伺服器。清除瀏覽器資料就不見了，重要的記得匯出 JSON 備份。iPhone、iPad 用 Safari 直接開的網站，連續 7 天沒打開可能被清掉：請「加入主畫面」再用。</p>
+  </div>
+</dialog>
+
+<!-- 首頁的 ⋯ -->
+<dialog id="homesheet">
+  <div class="sheet">
+    <h2>更多</h2>
+    <p class="muted" id="home-status"></p>
+    <p class="keep-note">iPhone、iPad：Safari 直接開的網站連續 7 天沒打開，存的圖可能被清掉。請「加入主畫面」再用，重要的圖定期匯出。</p>
+    <button type="button" id="hs-import">匯入 JSON（一張頭圖或整個頭圖庫）</button>
+    <button type="button" id="hs-export">匯出全部頭圖（JSON，含照片）</button>
+    <button type="button" id="hs-help">說明</button>
+    <button type="button" id="hs-about">關於與授權</button>
+    <button type="button" id="hs-close" class="ghost">關閉</button>
+  </div>
+</dialog>
+
+<!-- 關於與授權：頭模與程式庫的來源、授權 -->
+<dialog id="aboutsheet">
+  <div class="sheet">
+    <div class="sheet-head"><h2>關於與授權</h2><button type="button" class="ic" id="as-close" aria-label="關閉"><svg><use href="#i-close"/></svg></button></div>
+    <p class="muted">頭圖：在 3D 頭模上，或在五個視圖的平面圖上，畫點、線、面與髮片。畫的圖只存在這個瀏覽器裡。</p>
+    <p class="about-license">本網頁的程式碼以 <b>AGPL-3.0</b> 授權公開：<a href="https://github.com/headmap-app/headmap" target="_blank" rel="noopener">原始碼</a>（<a href="./LICENSE" target="_blank" rel="noopener">授權全文</a>）。頭模與程式庫各依下面列的授權。</p>
+    <p class="keep-note">iPhone、iPad：用 Safari 直接開的網站，連續 7 天沒有打開，瀏覽器可能把存的圖清掉。請用分享選單「加入主畫面」再打開，重要的圖也定期匯出 JSON。</p>
+    <h3>頭模</h3>
+    <ul class="credits">
+      <li><b>頭模 1</b>　女性。MakeHuman／MPFB 2 基礎網格與系統素材（MakeHuman／MPFB 2 社群），CC0 授權。</li>
+      <li><b>頭模 2</b>　女性・寫實。Blender Human Base Meshes v1.4.1・Body Female - Realistic（Dan Ulrich，Blender Studio），CC0 授權（<a href="./assets/heads/licenses/Blender_HumanBaseMeshes_LICENSE.txt" target="_blank" rel="noopener">授權全文</a>）。</li>
+      <li><b>頭模 3</b>　男性・寫實。Blender Human Base Meshes v1.4.1・Body Male - Realistic（Dan Ulrich，Blender Studio），CC0 授權（<a href="./assets/heads/licenses/Blender_HumanBaseMeshes_LICENSE.txt" target="_blank" rel="noopener">授權全文</a>）。</li>
+      <li><b>頭模 4</b>　中性。ICT-FaceKit（USC Institute for Creative Technologies），MIT 授權（<a href="./assets/heads/licenses/ICT-FaceKit_LICENSE.txt" target="_blank" rel="noopener">授權全文</a>）。</li>
+      <li>四顆都只做了裁切成胸像、縮放對齊、補面、標出耳殼。</li>
+    </ul>
+    <h3>程式庫</h3>
+    <ul class="credits">
+      <li><b>頭模 4 的肩膀</b>　MakeHuman／MPFB 基礎網格，CC0。</li>
+      <li><b>three.js</b>　MIT 授權（<a href="./vendor/three/LICENSE" target="_blank" rel="noopener">授權全文</a>）。</li>
+      <li><b>three-mesh-bvh</b>　MIT 授權（<a href="./vendor/three-mesh-bvh/LICENSE" target="_blank" rel="noopener">授權全文</a>）。</li>
+    </ul>
+  </div>
+</dialog>
+
+<input type="file" id="file-input" accept=".json,application/json" hidden>
+<input type="file" id="photo-input" accept="image/*" multiple hidden>
+<input type="file" id="fl-back-input" accept="image/*" hidden>
+<div id="toast" role="status"></div>
+<div id="loading"><div class="spin"></div><span>載入頭模…</span></div>
+<script type="module" src="src/app.js"></script>
+</body>
+</html>

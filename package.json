@@ -1,0 +1,18 @@
+{
+  "name": "headmap",
+  "version": "1.0.0",
+  "private": true,
+  "description": "畫剪髮圖解的網頁：3D 頭模與 2D 五視圖 / Haircut diagram drawing app: 3D head models and 2D five-view charts",
+  "keywords": ["hairdressing", "haircut", "diagram", "head-sheet", "3d", "threejs", "static-site"],
+  "homepage": "https://headmap.pages.dev/",
+  "repository": { "type": "git", "url": "git+https://github.com/headmap-app/headmap.git" },
+  "bugs": { "url": "https://github.com/headmap-app/headmap/issues" },
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test",
+    "build:transfer": "node tools/build-transfer.mjs"
+  }
+}
